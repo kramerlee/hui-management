@@ -8,6 +8,9 @@ import InputNumber from 'primevue/inputnumber'
 import Dropdown from 'primevue/dropdown'
 import Calendar from 'primevue/calendar'
 import Button from 'primevue/button'
+import RadioButton from 'primevue/radiobutton'
+import Textarea from 'primevue/textarea'
+import Chip from 'primevue/chip'
 import type { HuiGroupForm } from '@/types'
 
 const router = useRouter()
@@ -19,12 +22,26 @@ const form = reactive<HuiGroupForm>({
   totalMembers: 10,
   amountPerPeriod: 1000000,
   periodType: 'monthly',
+  huiType: 'bidding',
   startDate: new Date().toISOString().split('T')[0]
 })
 
 const startDateObj = ref(new Date())
 const loading = ref(false)
 const errors = ref<Record<string, string>>({})
+const memberNamesInput = ref('')
+
+// Parse member names from comma-separated input
+const parsedMemberNames = computed(() => {
+  if (!memberNamesInput.value.trim()) return []
+  return memberNamesInput.value
+    .split(',')
+    .map(name => name.trim())
+    .filter(name => name.length > 0)
+})
+
+// Check if using random type
+const isRandomType = computed(() => form.huiType === 'random')
 
 const periodOptions = [
   { label: 'Hàng ngày', value: 'daily' },
@@ -32,19 +49,40 @@ const periodOptions = [
   { label: 'Hàng tháng', value: 'monthly' }
 ]
 
-const endDate = computed(() => {
+const huiTypeOptions = [
+  { label: 'Đấu giá', value: 'bidding', description: 'Người trả tiền chân cao nhất được hốt' },
+  { label: 'Xoay vòng ngẫu nhiên', value: 'random', description: 'Hệ thống chọn ngẫu nhiên người hốt' }
+]
+
+// Note: endDate and totalValue have been replaced by actualEndDate and actualTotalValue
+
+// Actual member count based on hui type
+const actualMemberCount = computed(() => {
+  return isRandomType.value ? parsedMemberNames.value.length : form.totalMembers
+})
+
+// Actual total value based on hui type
+const actualTotalValue = computed(() => {
+  return form.amountPerPeriod * actualMemberCount.value
+})
+
+// Actual end date based on hui type
+const actualEndDate = computed(() => {
+  const memberCount = actualMemberCount.value
+  if (memberCount < 1) return 'Chưa xác định'
+  
   const start = new Date(startDateObj.value)
   const end = new Date(start)
   
   switch (form.periodType) {
     case 'daily':
-      end.setDate(end.getDate() + form.totalMembers - 1)
+      end.setDate(end.getDate() + memberCount - 1)
       break
     case 'weekly':
-      end.setDate(end.getDate() + (form.totalMembers - 1) * 7)
+      end.setDate(end.getDate() + (memberCount - 1) * 7)
       break
     case 'monthly':
-      end.setMonth(end.getMonth() + form.totalMembers - 1)
+      end.setMonth(end.getMonth() + memberCount - 1)
       break
   }
   
@@ -54,10 +92,6 @@ const endDate = computed(() => {
     month: 'long',
     day: 'numeric'
   })
-})
-
-const totalValue = computed(() => {
-  return form.amountPerPeriod * form.totalMembers
 })
 
 function formatCurrency(value: number): string {
@@ -75,12 +109,21 @@ function validate(): boolean {
     errors.value.name = 'Vui lòng nhập tên dây hụi'
   }
   
-  if (form.totalMembers < 2) {
-    errors.value.totalMembers = 'Số người tối thiểu là 2'
-  }
-  
-  if (form.totalMembers > 100) {
-    errors.value.totalMembers = 'Số người tối đa là 100'
+  // For random type, validate member names instead of totalMembers
+  if (isRandomType.value) {
+    if (parsedMemberNames.value.length < 2) {
+      errors.value.memberNames = 'Vui lòng nhập ít nhất 2 thành viên'
+    }
+    if (parsedMemberNames.value.length > 100) {
+      errors.value.memberNames = 'Số người tối đa là 100'
+    }
+  } else {
+    if (form.totalMembers < 2) {
+      errors.value.totalMembers = 'Số người tối thiểu là 2'
+    }
+    if (form.totalMembers > 100) {
+      errors.value.totalMembers = 'Số người tối đa là 100'
+    }
   }
   
   if (form.amountPerPeriod < 10000) {
@@ -97,7 +140,12 @@ async function handleSubmit() {
   
   const formData: HuiGroupForm = {
     ...form,
-    startDate: startDateObj.value.toISOString().split('T')[0]
+    startDate: startDateObj.value.toISOString().split('T')[0],
+    // For random type, use parsed member names and set totalMembers
+    ...(isRandomType.value && {
+      memberNames: parsedMemberNames.value,
+      totalMembers: parsedMemberNames.value.length
+    })
   }
   
   const groupId = await huiStore.createHuiGroup(formData)
@@ -147,7 +195,8 @@ async function handleSubmit() {
             <small v-if="errors.name" class="error-text">{{ errors.name }}</small>
           </div>
 
-          <div class="hui-create__row">
+          <!-- Show different input based on hui type -->
+          <div v-if="!isRandomType" class="hui-create__row">
             <div class="hui-create__form-group">
               <label class="label">Số người tham gia <span class="required">*</span></label>
               <InputNumber
@@ -175,6 +224,54 @@ async function handleSubmit() {
             </div>
           </div>
 
+          <!-- Random type: Member names input -->
+          <template v-else>
+            <div class="hui-create__form-group">
+              <label class="label">Danh sách thành viên <span class="required">*</span></label>
+              <Textarea
+                v-model="memberNamesInput"
+                placeholder="Nhập tên thành viên, ngăn cách bởi dấu phẩy. VD: Nguyễn Văn A, Trần Thị B, Lê Văn C"
+                :autoResize="true"
+                rows="3"
+                :class="{ 'p-invalid': errors.memberNames }"
+              />
+              <small v-if="errors.memberNames" class="error-text">{{ errors.memberNames }}</small>
+              <small v-else class="hui-create__hint">
+                Nhập tên các thành viên ngăn cách bằng dấu phẩy (,)
+              </small>
+            </div>
+
+            <!-- Preview parsed members -->
+            <div v-if="parsedMemberNames.length > 0" class="hui-create__members-preview">
+              <div class="hui-create__members-header">
+                <span>Thành viên đã nhập:</span>
+                <span class="hui-create__members-count">{{ parsedMemberNames.length }} người</span>
+              </div>
+              <div class="hui-create__members-chips">
+                <Chip
+                  v-for="(name, index) in parsedMemberNames"
+                  :key="index"
+                  :label="name"
+                  class="hui-create__member-chip"
+                />
+              </div>
+            </div>
+
+            <div class="hui-create__form-group">
+              <label class="label">Số tiền mỗi kỳ <span class="required">*</span></label>
+              <InputNumber
+                v-model="form.amountPerPeriod"
+                mode="currency"
+                currency="VND"
+                locale="vi-VN"
+                :min="10000"
+                :step="100000"
+                :class="{ 'p-invalid': errors.amountPerPeriod }"
+              />
+              <small v-if="errors.amountPerPeriod" class="error-text">{{ errors.amountPerPeriod }}</small>
+            </div>
+          </template>
+
           <div class="hui-create__row">
             <div class="hui-create__form-group">
               <label class="label">Kỳ hạn</label>
@@ -197,22 +294,50 @@ async function handleSubmit() {
             </div>
           </div>
 
+          <div class="hui-create__form-group">
+            <label class="label">Loại hụi</label>
+            <div class="hui-create__hui-type">
+              <div
+                v-for="option in huiTypeOptions"
+                :key="option.value"
+                class="hui-create__hui-type-option"
+                :class="{ 'hui-create__hui-type-option--selected': form.huiType === option.value }"
+                @click="form.huiType = option.value as 'bidding' | 'random'"
+              >
+                <RadioButton
+                  v-model="form.huiType"
+                  :inputId="option.value"
+                  :value="option.value"
+                />
+                <div class="hui-create__hui-type-content">
+                  <label :for="option.value" class="hui-create__hui-type-label">
+                    <i :class="option.value === 'bidding' ? 'pi pi-dollar' : 'pi pi-sync'"></i>
+                    {{ option.label }}
+                  </label>
+                  <p class="hui-create__hui-type-desc">{{ option.description }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="hui-create__summary">
             <h3>Tổng quan</h3>
             <div class="hui-create__summary-grid">
               <div class="hui-create__summary-item">
                 <span class="hui-create__summary-label">Tổng số kỳ</span>
-                <span class="hui-create__summary-value">{{ form.totalMembers }} kỳ</span>
+                <span class="hui-create__summary-value">
+                  {{ isRandomType ? parsedMemberNames.length : form.totalMembers }} kỳ
+                </span>
               </div>
               <div class="hui-create__summary-item">
                 <span class="hui-create__summary-label">Tổng giá trị</span>
                 <span class="hui-create__summary-value hui-create__summary-value--highlight">
-                  {{ formatCurrency(totalValue) }}
+                  {{ formatCurrency(actualTotalValue) }}
                 </span>
               </div>
               <div class="hui-create__summary-item hui-create__summary-item--full">
                 <span class="hui-create__summary-label">Ngày kết thúc dự kiến</span>
-                <span class="hui-create__summary-value">{{ endDate }}</span>
+                <span class="hui-create__summary-value">{{ actualEndDate }}</span>
               </div>
             </div>
           </div>
@@ -360,6 +485,107 @@ async function handleSubmit() {
     display: flex;
     gap: $spacing-md;
     justify-content: flex-end;
+  }
+
+  &__hui-type {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+
+    @include sm {
+      flex-direction: row;
+    }
+  }
+
+  &__hui-type-option {
+    flex: 1;
+    display: flex;
+    align-items: flex-start;
+    gap: $spacing-md;
+    padding: $spacing-lg;
+    border: 2px solid $border-color;
+    border-radius: $radius-md;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      border-color: $primary-light;
+      background: rgba($primary, 0.02);
+    }
+
+    &--selected {
+      border-color: $primary;
+      background: rgba($primary, 0.05);
+    }
+  }
+
+  &__hui-type-content {
+    flex: 1;
+  }
+
+  &__hui-type-label {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    font-weight: 600;
+    cursor: pointer;
+
+    i {
+      color: $primary;
+    }
+  }
+
+  &__hui-type-desc {
+    margin-top: $spacing-xs;
+    font-size: $font-size-sm;
+    color: $text-muted;
+  }
+
+  &__hint {
+    display: block;
+    margin-top: $spacing-xs;
+    font-size: $font-size-xs;
+    color: $text-muted;
+  }
+
+  &__members-preview {
+    background: $surface-alt;
+    border-radius: $radius-md;
+    padding: $spacing-md;
+    margin-bottom: $spacing-lg;
+  }
+
+  &__members-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: $spacing-sm;
+    font-size: $font-size-sm;
+    color: $text-secondary;
+  }
+
+  &__members-count {
+    font-weight: 600;
+    color: $primary;
+  }
+
+  &__members-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-xs;
+  }
+
+  &__member-chip {
+    :deep(.p-chip) {
+      background: $surface;
+      border: 1px solid $border-color;
+      font-size: $font-size-sm;
+    }
+  }
+
+  :deep(.p-textarea) {
+    width: 100%;
+    resize: vertical;
   }
 }
 </style>

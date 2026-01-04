@@ -108,6 +108,7 @@ export const useHuiStore = defineStore('hui', () => {
       totalMembers: form.totalMembers,
       amountPerPeriod: form.amountPerPeriod,
       periodType: form.periodType,
+      huiType: form.huiType,
       startDate: form.startDate,
       endDate,
       status: 'active',
@@ -123,8 +124,32 @@ export const useHuiStore = defineStore('hui', () => {
     // Create initial periods
     await createInitialPeriodsDemo(id, form.startDate, form.totalMembers, form.periodType, form.amountPerPeriod)
     
+    // If member names are provided (random type), create members
+    if (form.memberNames && form.memberNames.length > 0) {
+      await createMembersFromNamesDemo(id, form.memberNames)
+    }
+    
     await fetchHuiGroupsDemo()
     return id
+  }
+
+  async function createMembersFromNamesDemo(huiGroupId: string, memberNames: string[]) {
+    const allMembers = loadFromStorage<HuiMember>(STORAGE_KEYS.members)
+    
+    memberNames.forEach((name, index) => {
+      const member: HuiMember = {
+        id: generateId(),
+        huiGroupId,
+        name: name.trim(),
+        email: '',
+        order: index + 1,
+        hasReceived: false,
+        joinedAt: new Date().toISOString()
+      }
+      allMembers.push(member)
+    })
+    
+    saveToStorage(STORAGE_KEYS.members, allMembers)
   }
 
   async function createInitialPeriodsDemo(
@@ -391,6 +416,7 @@ export const useHuiStore = defineStore('hui', () => {
       totalMembers: form.totalMembers,
       amountPerPeriod: form.amountPerPeriod,
       periodType: form.periodType,
+      huiType: form.huiType,
       startDate: form.startDate,
       endDate,
       status: 'active',
@@ -401,8 +427,32 @@ export const useHuiStore = defineStore('hui', () => {
 
     const docRef = await fs.addDoc(fs.collection(db, 'huiGroups'), newGroup)
     await createInitialPeriodsFirebase(docRef.id, form.startDate, form.totalMembers, form.periodType, form.amountPerPeriod)
+    
+    // If member names are provided (random type), create members
+    if (form.memberNames && form.memberNames.length > 0) {
+      await createMembersFromNamesFirebase(docRef.id, form.memberNames)
+    }
+    
     await fetchHuiGroupsFirebase()
     return docRef.id
+  }
+
+  async function createMembersFromNamesFirebase(huiGroupId: string, memberNames: string[]) {
+    const fs = await getFirestore()
+    const db = await getFirebaseDb()
+    if (!db) return
+    
+    for (let i = 0; i < memberNames.length; i++) {
+      const member: Omit<HuiMember, 'id'> = {
+        huiGroupId,
+        name: memberNames[i].trim(),
+        email: '',
+        order: i + 1,
+        hasReceived: false,
+        joinedAt: new Date().toISOString()
+      }
+      await fs.addDoc(fs.collection(db, 'huiMembers'), member)
+    }
   }
 
   async function createInitialPeriodsFirebase(

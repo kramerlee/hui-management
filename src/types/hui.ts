@@ -9,6 +9,11 @@ export type HuiStatus = 'active' | 'completed' | 'cancelled'
 export type PeriodType = 'daily' | 'weekly' | 'monthly'
 
 /**
+ * Loại hụi - cách thức chọn người hốt
+ */
+export type HuiType = 'bidding' | 'random'
+
+/**
  * Trạng thái kỳ hụi
  */
 export type PeriodStatus = 'pending' | 'bidding' | 'completed'
@@ -30,6 +35,7 @@ export interface HuiGroup {
   totalMembers: number
   amountPerPeriod: number
   periodType: PeriodType
+  huiType: HuiType
   startDate: string
   endDate: string
   status: HuiStatus
@@ -46,7 +52,9 @@ export interface HuiGroupForm {
   totalMembers: number
   amountPerPeriod: number
   periodType: PeriodType
+  huiType: HuiType
   startDate: string
+  memberNames?: string[] // For random type - bulk add members
 }
 
 /**

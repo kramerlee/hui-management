@@ -323,7 +323,18 @@ export const useAuthStore = defineStore('auth', () => {
     firebaseAuth.onAuthStateChanged(auth, async (firebaseUser) => {
       user.value = firebaseUser
       if (firebaseUser) {
-        await createUserProfile(firebaseUser)
+        try {
+          await createUserProfile(firebaseUser)
+        } catch (e) {
+          console.error('Failed to create/load user profile:', e)
+          // Still set basic profile from auth user
+          userProfile.value = {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email || '',
+            displayName: firebaseUser.displayName || '',
+            createdAt: new Date().toISOString()
+          }
+        }
       } else {
         userProfile.value = null
       }

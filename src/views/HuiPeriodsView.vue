@@ -23,6 +23,8 @@ const selectedPeriod = ref<HuiPeriod | null>(null)
 const bidForm = ref<PeriodBidForm>({ winnerId: '', bidAmount: 0 })
 const formErrors = ref<Record<string, string>>({})
 const isSubmitting = ref(false)
+const isDrawing = ref(false)
+const drawingName = ref('')
 
 onMounted(async () => {
   await Promise.all([
@@ -82,13 +84,47 @@ function getStatusLabel(status: string): string {
   }
 }
 
+const isRandomType = computed(() => group.value?.huiType === 'random')
+
 function openBidDialog(period: HuiPeriod) {
   if (period.status === 'completed') return
   
   selectedPeriod.value = period
   bidForm.value = { winnerId: '', bidAmount: 0 }
   formErrors.value = {}
+  isDrawing.value = false
+  drawingName.value = ''
   showBidDialog.value = true
+}
+
+async function handleRandomDraw() {
+  if (eligibleMembers.value.length === 0) return
+  
+  isDrawing.value = true
+  drawingName.value = ''
+  
+  const members = eligibleMembers.value
+  const duration = 2000
+  const intervalTime = 80
+  const iterations = duration / intervalTime
+  
+  let count = 0
+  const interval = setInterval(() => {
+    const randomIndex = Math.floor(Math.random() * members.length)
+    drawingName.value = members[randomIndex].label
+    count++
+    
+    if (count >= iterations) {
+      clearInterval(interval)
+      
+      // Final random selection
+      const winnerIndex = Math.floor(Math.random() * members.length)
+      const winner = members[winnerIndex]
+      bidForm.value.winnerId = winner.value
+      drawingName.value = winner.label
+      isDrawing.value = false
+    }
+  }, intervalTime)
 }
 
 function validateForm(): boolean {
@@ -243,7 +279,7 @@ const winnerReceiveAmount = computed(() => {
         v-model:visible="showBidDialog"
         :header="`Khui kỳ ${selectedPeriod?.periodNumber}`"
         :modal="true"
-        :style="{ width: '450px' }"
+        :style="{ width: '500px' }"
       >
         <div v-if="selectedPeriod" class="hui-periods__bid-form">
           <div class="hui-periods__bid-info">
@@ -255,41 +291,93 @@ const winnerReceiveAmount = computed(() => {
               <span>Tổng tiền:</span>
               <strong>{{ formatCurrency(selectedPeriod.totalAmount) }}</strong>
             </div>
+            <div class="hui-periods__bid-row">
+              <span>Loại hụi:</span>
+              <strong>
+                <i :class="isRandomType ? 'pi pi-sync' : 'pi pi-dollar'" style="margin-right: 4px"></i>
+                {{ isRandomType ? 'Xoay vòng ngẫu nhiên' : 'Đấu giá' }}
+              </strong>
+            </div>
           </div>
 
-          <div class="hui-periods__form-group">
-            <label class="label">Người hốt <span class="required">*</span></label>
-            <Dropdown
-              v-model="bidForm.winnerId"
-              :options="eligibleMembers"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="Chọn người hốt"
-              :class="{ 'p-invalid': formErrors.winnerId }"
+          <!-- Random Draw Section -->
+          <div v-if="isRandomType" class="hui-periods__random-draw">
+            <div class="hui-periods__draw-display" :class="{ 'hui-periods__draw-display--drawing': isDrawing }">
+              <div class="hui-periods__draw-icon">
+                <i class="pi pi-sync" :class="{ 'pi-spin': isDrawing }"></i>
+              </div>
+              <div class="hui-periods__draw-name">
+                {{ drawingName || 'Nhấn quay để chọn người hốt' }}
+              </div>
+            </div>
+            
+            <Button
+              v-if="!bidForm.winnerId || isDrawing"
+              :label="isDrawing ? 'Đang quay...' : 'Quay số ngẫu nhiên'"
+              icon="pi pi-sync"
+              :loading="isDrawing"
+              :disabled="eligibleMembers.length === 0 || isDrawing"
+              class="hui-periods__draw-button"
+              @click="handleRandomDraw"
             />
-            <small v-if="formErrors.winnerId" class="error-text">{{ formErrors.winnerId }}</small>
+            
+            <div v-else class="hui-periods__winner-display">
+              <div class="hui-periods__winner-badge">
+                <i class="pi pi-trophy"></i>
+                <span>Người hốt kỳ này</span>
+              </div>
+              <div class="hui-periods__winner-name">{{ drawingName }}</div>
+              <Button
+                label="Quay lại"
+                icon="pi pi-refresh"
+                severity="secondary"
+                text
+                size="small"
+                @click="bidForm.winnerId = ''; drawingName = ''"
+              />
+            </div>
+            
             <small v-if="eligibleMembers.length === 0" class="error-text">
               Không còn hụi viên chưa hốt
             </small>
           </div>
 
-          <div class="hui-periods__form-group">
-            <label class="label">Tiền chân (tiền đấu giá)</label>
-            <InputNumber
-              v-model="bidForm.bidAmount"
-              mode="currency"
-              currency="VND"
-              locale="vi-VN"
-              :min="0"
-              :max="maxBidAmount"
-              :step="50000"
-              :class="{ 'p-invalid': formErrors.bidAmount }"
-            />
-            <small v-if="formErrors.bidAmount" class="error-text">{{ formErrors.bidAmount }}</small>
-            <small class="hui-periods__hint">
-              Tiền chân là số tiền người hốt phải trả để được ưu tiên
-            </small>
-          </div>
+          <!-- Bidding Section (Original) -->
+          <template v-else>
+            <div class="hui-periods__form-group">
+              <label class="label">Người hốt <span class="required">*</span></label>
+              <Dropdown
+                v-model="bidForm.winnerId"
+                :options="eligibleMembers"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Chọn người hốt"
+                :class="{ 'p-invalid': formErrors.winnerId }"
+              />
+              <small v-if="formErrors.winnerId" class="error-text">{{ formErrors.winnerId }}</small>
+              <small v-if="eligibleMembers.length === 0" class="error-text">
+                Không còn hụi viên chưa hốt
+              </small>
+            </div>
+
+            <div class="hui-periods__form-group">
+              <label class="label">Tiền chân (tiền đấu giá)</label>
+              <InputNumber
+                v-model="bidForm.bidAmount"
+                mode="currency"
+                currency="VND"
+                locale="vi-VN"
+                :min="0"
+                :max="maxBidAmount"
+                :step="50000"
+                :class="{ 'p-invalid': formErrors.bidAmount }"
+              />
+              <small v-if="formErrors.bidAmount" class="error-text">{{ formErrors.bidAmount }}</small>
+              <small class="hui-periods__hint">
+                Tiền chân là số tiền người hốt phải trả để được ưu tiên
+              </small>
+            </div>
+          </template>
 
           <div class="hui-periods__summary">
             <div class="hui-periods__summary-row">
@@ -312,7 +400,7 @@ const winnerReceiveAmount = computed(() => {
             label="Xác nhận khui"
             icon="pi pi-check"
             :loading="isSubmitting"
-            :disabled="eligibleMembers.length === 0"
+            :disabled="eligibleMembers.length === 0 || !bidForm.winnerId"
             @click="handleCompletePeriod"
           />
         </template>
@@ -452,6 +540,90 @@ const winnerReceiveAmount = computed(() => {
   &__receive-amount {
     color: $success;
     font-size: $font-size-xl;
+  }
+
+  &__random-draw {
+    @include flex-column;
+    align-items: center;
+    gap: $spacing-lg;
+    padding: $spacing-lg 0;
+  }
+
+  &__draw-display {
+    @include flex-column;
+    align-items: center;
+    gap: $spacing-md;
+    padding: $spacing-xl;
+    background: $surface-alt;
+    border-radius: $radius-lg;
+    width: 100%;
+    text-align: center;
+    transition: all 0.3s ease;
+
+    &--drawing {
+      background: linear-gradient(135deg, rgba($primary, 0.1), rgba($secondary, 0.1));
+      animation: pulse 0.5s ease-in-out infinite;
+    }
+  }
+
+  &__draw-icon {
+    width: 64px;
+    height: 64px;
+    @include gradient-primary;
+    border-radius: $radius-full;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    i {
+      font-size: 1.75rem;
+      color: white;
+    }
+  }
+
+  &__draw-name {
+    font-size: $font-size-xl;
+    font-weight: 600;
+    color: $text-primary;
+    min-height: 2rem;
+  }
+
+  &__draw-button {
+    width: 100%;
+  }
+
+  &__winner-display {
+    @include flex-column;
+    align-items: center;
+    gap: $spacing-sm;
+    width: 100%;
+  }
+
+  &__winner-badge {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    color: $warning;
+    font-size: $font-size-sm;
+
+    i {
+      font-size: 1.25rem;
+    }
+  }
+
+  &__winner-name {
+    font-size: $font-size-2xl;
+    font-weight: 700;
+    color: $success;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.02);
+    }
   }
 }
 </style>
