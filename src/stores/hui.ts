@@ -104,7 +104,7 @@ export const useHuiStore = defineStore('hui', () => {
       name: form.name,
       ownerId: authStore.userId,
       ownerName: authStore.userProfile?.displayName || '',
-      ownerPhone: authStore.userProfile?.phone || '',
+      ownerEmail: authStore.userProfile?.email || '',
       totalMembers: form.totalMembers,
       amountPerPeriod: form.amountPerPeriod,
       periodType: form.periodType,
@@ -215,7 +215,7 @@ export const useHuiStore = defineStore('hui', () => {
       id: generateId(),
       huiGroupId,
       name: form.name,
-      phone: form.phone,
+      email: form.email,
       order: currentMembersCount + 1,
       hasReceived: false,
       joinedAt: new Date().toISOString()
@@ -387,7 +387,7 @@ export const useHuiStore = defineStore('hui', () => {
       name: form.name,
       ownerId: authStore.userId,
       ownerName: authStore.userProfile?.displayName || '',
-      ownerPhone: authStore.userProfile?.phone || '',
+      ownerEmail: authStore.userProfile?.email || '',
       totalMembers: form.totalMembers,
       amountPerPeriod: form.amountPerPeriod,
       periodType: form.periodType,
@@ -517,7 +517,7 @@ export const useHuiStore = defineStore('hui', () => {
     const newMember: Omit<HuiMember, 'id'> = {
       huiGroupId,
       name: form.name,
-      phone: form.phone,
+      email: form.email,
       order: currentMembersCount + 1,
       hasReceived: false,
       joinedAt: new Date().toISOString()

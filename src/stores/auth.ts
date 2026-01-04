@@ -11,14 +11,11 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref<import('firebase/auth').User | null>(null)
   const userProfile = ref<UserProfile | null>(null)
   const loading = ref(true)
-  const confirmationResult = ref<import('firebase/auth').ConfirmationResult | null>(null)
   const error = ref<string | null>(null)
   const isDemoMode = ref(!isFirebaseConfigured)
 
   const isAuthenticated = computed(() => !!user.value || !!userProfile.value)
   const userId = computed(() => user.value?.uid || userProfile.value?.uid || '')
-
-  let recaptchaVerifier: import('firebase/auth').RecaptchaVerifier | null = null
 
   async function loadFirebaseModules() {
     if (!isFirebaseConfigured) return false
@@ -37,34 +34,19 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function initRecaptcha(containerId: string) {
-    if (!isFirebaseConfigured) {
-      console.warn('Firebase not configured, skipping recaptcha')
-      return
-    }
-    
-    const loaded = await loadFirebaseModules()
-    if (!loaded || !firebaseAuth) return
-    
-    const auth = await getFirebaseAuth()
-    if (!auth) return
-    
-    if (recaptchaVerifier) {
-      recaptchaVerifier.clear()
-    }
-    recaptchaVerifier = new firebaseAuth.RecaptchaVerifier(auth, containerId, {
-      size: 'invisible',
-      callback: () => {
-        // reCAPTCHA solved
-      }
-    })
-  }
-
-  async function sendOTP(phoneNumber: string) {
+  async function register(email: string, password: string) {
     error.value = null
     
-    // Demo mode - simulate OTP sent
+    // Demo mode - simulate registration
     if (isDemoMode.value) {
+      const demoProfile: UserProfile = {
+        uid: 'demo-user-' + Date.now(),
+        email: email,
+        displayName: '',
+        createdAt: new Date().toISOString()
+      }
+      userProfile.value = demoProfile
+      localStorage.setItem('hui_demo_user', JSON.stringify(demoProfile))
       return true
     }
     
@@ -76,61 +58,94 @@ export const useAuthStore = defineStore('auth', () => {
     
     try {
       const auth = await getFirebaseAuth()
-      if (!auth || !recaptchaVerifier) {
-        throw new Error('Recaptcha chưa được khởi tạo')
+      if (!auth) {
+        throw new Error('Firebase Auth chưa được khởi tạo')
       }
-      const formattedPhone = phoneNumber.startsWith('+') 
-        ? phoneNumber 
-        : `+84${phoneNumber.replace(/^0/, '')}`
       
-      confirmationResult.value = await firebaseAuth.signInWithPhoneNumber(
-        auth,
-        formattedPhone,
-        recaptchaVerifier
-      )
+      const result = await firebaseAuth.createUserWithEmailAndPassword(auth, email, password)
+      user.value = result.user
+      
+      // Create user profile
+      await createUserProfile(result.user)
+      
       return true
-    } catch (e) {
-      error.value = (e as Error).message
+    } catch (e: unknown) {
+      const firebaseError = e as { code?: string; message?: string }
+      error.value = getErrorMessage(firebaseError.code || firebaseError.message || 'Unknown error')
       return false
     }
   }
 
-  async function verifyOTP(otp: string, phone?: string) {
+  async function login(email: string, password: string) {
     error.value = null
     
-    // Demo mode - simulate verification
+    // Demo mode - simulate login
     if (isDemoMode.value) {
-      if (otp === '123456') {
-        const demoProfile: UserProfile = {
-          uid: 'demo-user-' + Date.now(),
-          phone: phone || '+84912345678',
-          displayName: '',
-          createdAt: new Date().toISOString()
+      // Check if there's an existing demo user with this email
+      const savedUser = localStorage.getItem('hui_demo_user')
+      if (savedUser) {
+        try {
+          const parsed = JSON.parse(savedUser)
+          if (parsed.email === email) {
+            userProfile.value = parsed
+            return true
+          }
+        } catch {
+          // Ignore parse errors
         }
-        userProfile.value = demoProfile
-        localStorage.setItem('hui_demo_user', JSON.stringify(demoProfile))
-        return true
-      } else {
-        error.value = 'Mã OTP không đúng. Sử dụng 123456 để đăng nhập demo.'
-        return false
       }
+      
+      // For demo, any email/password works, create a new profile
+      const demoProfile: UserProfile = {
+        uid: 'demo-user-' + Date.now(),
+        email: email,
+        displayName: '',
+        createdAt: new Date().toISOString()
+      }
+      userProfile.value = demoProfile
+      localStorage.setItem('hui_demo_user', JSON.stringify(demoProfile))
+      return true
+    }
+    
+    const loaded = await loadFirebaseModules()
+    if (!loaded || !firebaseAuth) {
+      error.value = 'Firebase không khả dụng'
+      return false
     }
     
     try {
-      if (!confirmationResult.value) {
-        throw new Error('Chưa gửi mã OTP')
+      const auth = await getFirebaseAuth()
+      if (!auth) {
+        throw new Error('Firebase Auth chưa được khởi tạo')
       }
-      const result = await confirmationResult.value.confirm(otp)
+      
+      const result = await firebaseAuth.signInWithEmailAndPassword(auth, email, password)
       user.value = result.user
       
-      // Create or update user profile
+      // Get or create user profile
       await createUserProfile(result.user)
       
       return true
-    } catch (e) {
-      error.value = (e as Error).message
+    } catch (e: unknown) {
+      const firebaseError = e as { code?: string; message?: string }
+      error.value = getErrorMessage(firebaseError.code || firebaseError.message || 'Unknown error')
       return false
     }
+  }
+
+  function getErrorMessage(code: string): string {
+    const messages: Record<string, string> = {
+      'auth/email-already-in-use': 'Email này đã được sử dụng',
+      'auth/invalid-email': 'Email không hợp lệ',
+      'auth/operation-not-allowed': 'Đăng ký bằng email chưa được bật',
+      'auth/weak-password': 'Mật khẩu quá yếu (ít nhất 6 ký tự)',
+      'auth/user-disabled': 'Tài khoản đã bị vô hiệu hóa',
+      'auth/user-not-found': 'Không tìm thấy tài khoản với email này',
+      'auth/wrong-password': 'Mật khẩu không đúng',
+      'auth/invalid-credential': 'Email hoặc mật khẩu không đúng',
+      'auth/too-many-requests': 'Quá nhiều lần thử. Vui lòng thử lại sau'
+    }
+    return messages[code] || code
   }
 
   async function createUserProfile(firebaseUser: import('firebase/auth').User) {
@@ -146,7 +161,7 @@ export const useAuthStore = defineStore('auth', () => {
     if (!userSnap.exists()) {
       const profile: UserProfile = {
         uid: firebaseUser.uid,
-        phone: firebaseUser.phoneNumber || '',
+        email: firebaseUser.email || '',
         displayName: firebaseUser.displayName || '',
         createdAt: new Date().toISOString()
       }
@@ -180,6 +195,35 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function resetPassword(email: string) {
+    error.value = null
+    
+    if (isDemoMode.value) {
+      // Demo mode - just pretend it worked
+      return true
+    }
+    
+    const loaded = await loadFirebaseModules()
+    if (!loaded || !firebaseAuth) {
+      error.value = 'Firebase không khả dụng'
+      return false
+    }
+    
+    try {
+      const auth = await getFirebaseAuth()
+      if (!auth) {
+        throw new Error('Firebase Auth chưa được khởi tạo')
+      }
+      
+      await firebaseAuth.sendPasswordResetEmail(auth, email)
+      return true
+    } catch (e: unknown) {
+      const firebaseError = e as { code?: string; message?: string }
+      error.value = getErrorMessage(firebaseError.code || firebaseError.message || 'Unknown error')
+      return false
+    }
+  }
+
   async function logout() {
     // Demo mode
     if (isDemoMode.value) {
@@ -197,7 +241,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
     user.value = null
     userProfile.value = null
-    confirmationResult.value = null
   }
 
   async function initAuthListener() {
@@ -246,9 +289,9 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     userId,
     isDemoMode,
-    initRecaptcha,
-    sendOTP,
-    verifyOTP,
+    register,
+    login,
+    resetPassword,
     updateUserName,
     logout,
     initAuthListener

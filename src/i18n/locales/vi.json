@@ -42,7 +42,7 @@
         },
         "security": {
           "title": "Bảo mật cao",
-          "description": "Xác thực bằng số điện thoại, dữ liệu được mã hóa và bảo vệ an toàn."
+          "description": "Xác thực bằng email, dữ liệu được mã hóa và bảo vệ an toàn trên Firebase."
         },
         "mobile": {
           "title": "Tương thích mọi thiết bị",
@@ -56,7 +56,7 @@
       "steps": {
         "step1": {
           "title": "Đăng ký tài khoản",
-          "description": "Đăng nhập nhanh chóng bằng số điện thoại, không cần mật khẩu phức tạp."
+          "description": "Đăng ký miễn phí bằng email, nhanh chóng và đơn giản."
         },
         "step2": {
           "title": "Tạo dây hụi",
@@ -87,14 +87,26 @@
   },
   "login": {
     "title": "Đăng nhập",
-    "phoneLabel": "Số điện thoại",
-    "phonePlaceholder": "912 345 678",
-    "continue": "Tiếp tục",
-    "otpLabel": "Nhập mã OTP",
-    "verify": "Xác nhận",
-    "back": "Quay lại",
+    "emailLabel": "Email",
+    "emailPlaceholder": "email@example.com",
+    "passwordLabel": "Mật khẩu",
+    "passwordPlaceholder": "Nhập mật khẩu",
+    "confirmPasswordLabel": "Xác nhận mật khẩu",
+    "confirmPasswordPlaceholder": "Nhập lại mật khẩu",
+    "passwordMismatch": "Mật khẩu không khớp",
+    "loginButton": "Đăng nhập",
+    "registerButton": "Đăng ký",
+    "forgotPassword": "Quên mật khẩu?",
+    "forgotInfo": "Nhập email của bạn để nhận link đặt lại mật khẩu.",
+    "resetButton": "Gửi link đặt lại",
+    "resetEmailSent": "Email đặt lại mật khẩu đã được gửi. Vui lòng kiểm tra hộp thư của bạn.",
+    "backToLogin": "Quay lại đăng nhập",
+    "noAccount": "Chưa có tài khoản?",
+    "hasAccount": "Đã có tài khoản?",
+    "registerLink": "Đăng ký ngay",
+    "loginLink": "Đăng nhập",
     "demoMode": "CHẾ ĐỘ DEMO",
-    "demoOtp": "Nhập mã {code} để đăng nhập",
+    "demoInfo": "Sử dụng bất kỳ email/mật khẩu nào để đăng nhập",
     "nameLabel": "Họ và tên",
     "namePlaceholder": "Nguyễn Văn A",
     "welcome": "Chào mừng bạn! Hãy cho chúng tôi biết tên của bạn.",

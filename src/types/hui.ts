@@ -26,7 +26,7 @@ export interface HuiGroup {
   name: string
   ownerId: string
   ownerName: string
-  ownerPhone: string
+  ownerEmail: string
   totalMembers: number
   amountPerPeriod: number
   periodType: PeriodType
@@ -57,7 +57,7 @@ export interface HuiMember {
   huiGroupId: string
   userId?: string
   name: string
-  phone: string
+  email: string
   order: number
   hasReceived: boolean
   receivedPeriod?: number
@@ -69,7 +69,7 @@ export interface HuiMember {
  */
 export interface HuiMemberForm {
   name: string
-  phone: string
+  email: string
 }
 
 /**
@@ -128,7 +128,7 @@ export interface HuiStats {
  */
 export interface UserProfile {
   uid: string
-  phone: string
+  email: string
   displayName?: string
   createdAt: string
 }

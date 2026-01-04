@@ -1,48 +1,62 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores'
 import InputText from 'primevue/inputtext'
+import Password from 'primevue/password'
 import Button from 'primevue/button'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const { t } = useI18n()
 
-const step = ref<'phone' | 'otp' | 'name'>('phone')
-const phone = ref('')
-const otp = ref('')
+type AuthMode = 'login' | 'register' | 'name' | 'forgot'
+const mode = ref<AuthMode>('login')
+const email = ref('')
+const password = ref('')
+const confirmPassword = ref('')
 const displayName = ref('')
 const loading = ref(false)
+const resetEmailSent = ref(false)
 
-onMounted(() => {
-  authStore.initRecaptcha('recaptcha-container')
-})
-
-async function handleSendOTP() {
-  if (!phone.value || phone.value.length < 9) return
+async function handleLogin() {
+  if (!email.value || !password.value) return
   
   loading.value = true
-  const success = await authStore.sendOTP(phone.value)
-  loading.value = false
-  
-  if (success) {
-    step.value = 'otp'
-  }
-}
-
-async function handleVerifyOTP() {
-  if (!otp.value || otp.value.length !== 6) return
-  
-  loading.value = true
-  const success = await authStore.verifyOTP(otp.value, phone.value)
+  const success = await authStore.login(email.value, password.value)
   loading.value = false
   
   if (success) {
     if (!authStore.userProfile?.displayName) {
-      step.value = 'name'
+      mode.value = 'name'
     } else {
       router.push('/dashboard')
     }
+  }
+}
+
+async function handleRegister() {
+  if (!email.value || !password.value || password.value !== confirmPassword.value) return
+  
+  loading.value = true
+  const success = await authStore.register(email.value, password.value)
+  loading.value = false
+  
+  if (success) {
+    mode.value = 'name'
+  }
+}
+
+async function handleResetPassword() {
+  if (!email.value) return
+  
+  loading.value = true
+  const success = await authStore.resetPassword(email.value)
+  loading.value = false
+  
+  if (success) {
+    resetEmailSent.value = true
   }
 }
 
@@ -56,11 +70,10 @@ async function handleSetName() {
   router.push('/dashboard')
 }
 
-function goBack() {
-  if (step.value === 'otp') {
-    step.value = 'phone'
-    otp.value = ''
-  }
+function switchMode(newMode: AuthMode) {
+  mode.value = newMode
+  authStore.error = null
+  resetEmailSent.value = false
 }
 </script>
 
@@ -73,103 +86,189 @@ function goBack() {
     <div class="login__container">
       <div class="login__card">
         <div class="login__header">
-          <div class="login__logo">H</div>
-          <h1 class="login__title">Quản Lý Hụi</h1>
-          <p class="login__subtitle">Hệ thống quản lý dây hụi thông minh</p>
+          <div class="login__logo">囍</div>
+          <h1 class="login__title">{{ t('app.name') }}</h1>
+          <p class="login__subtitle">{{ t('app.tagline') }}</p>
         </div>
 
-        <!-- Phone Step -->
-        <div v-if="step === 'phone'" class="login__form">
-          <div class="login__form-group">
-            <label class="login__label">Số điện thoại</label>
-            <div class="login__phone-input">
-              <span class="login__phone-prefix">+84</span>
-              <InputText
-                v-model="phone"
-                placeholder="912 345 678"
-                class="login__input"
-                @keyup.enter="handleSendOTP"
-              />
-            </div>
-          </div>
-
-          <Button
-            label="Tiếp tục"
-            icon="pi pi-arrow-right"
-            iconPos="right"
-            class="login__btn"
-            :loading="loading"
-            :disabled="!phone || phone.length < 9"
-            @click="handleSendOTP"
-          />
-
-          <p v-if="authStore.error" class="login__error">
-            {{ authStore.error }}
-          </p>
+        <!-- Demo Mode Badge -->
+        <div v-if="authStore.isDemoMode" class="login__demo-notice">
+          <span class="login__demo-badge">{{ t('login.demoMode') }}</span>
+          <p>{{ t('login.demoInfo') }}</p>
         </div>
 
-        <!-- OTP Step -->
-        <div v-else-if="step === 'otp'" class="login__form">
-          <button class="login__back" @click="goBack">
-            <i class="pi pi-arrow-left"></i>
-            Quay lại
-          </button>
-
-          <p class="login__info">
-            <template v-if="authStore.isDemoMode">
-              <span class="login__demo-badge">CHẾ ĐỘ DEMO</span><br>
-              Nhập mã <strong>123456</strong> để đăng nhập
-            </template>
-            <template v-else>
-              Mã xác nhận đã được gửi đến<br>
-              <strong>+84 {{ phone }}</strong>
-            </template>
-          </p>
-
+        <!-- Login Form -->
+        <div v-if="mode === 'login'" class="login__form">
           <div class="login__form-group">
-            <label class="login__label">Nhập mã OTP</label>
+            <label class="login__label">{{ t('login.emailLabel') }}</label>
             <InputText
-              v-model="otp"
-              placeholder="000000"
-              class="login__input login__input--otp"
-              maxlength="6"
-              @keyup.enter="handleVerifyOTP"
+              v-model="email"
+              type="email"
+              :placeholder="t('login.emailPlaceholder')"
+              class="login__input"
+              @keyup.enter="handleLogin"
             />
           </div>
 
+          <div class="login__form-group">
+            <label class="login__label">{{ t('login.passwordLabel') }}</label>
+            <Password
+              v-model="password"
+              :placeholder="t('login.passwordPlaceholder')"
+              :feedback="false"
+              toggleMask
+              class="login__input"
+              inputClass="w-full"
+              @keyup.enter="handleLogin"
+            />
+          </div>
+
+          <button class="login__forgot" @click="switchMode('forgot')">
+            {{ t('login.forgotPassword') }}
+          </button>
+
           <Button
-            label="Xác nhận"
-            icon="pi pi-check"
+            :label="t('login.loginButton')"
+            icon="pi pi-sign-in"
             iconPos="right"
             class="login__btn"
             :loading="loading"
-            :disabled="!otp || otp.length !== 6"
-            @click="handleVerifyOTP"
+            :disabled="!email || !password"
+            @click="handleLogin"
           />
 
           <p v-if="authStore.error" class="login__error">
             {{ authStore.error }}
           </p>
+
+          <div class="login__switch">
+            {{ t('login.noAccount') }}
+            <button @click="switchMode('register')">{{ t('login.registerLink') }}</button>
+          </div>
+        </div>
+
+        <!-- Register Form -->
+        <div v-else-if="mode === 'register'" class="login__form">
+          <div class="login__form-group">
+            <label class="login__label">{{ t('login.emailLabel') }}</label>
+            <InputText
+              v-model="email"
+              type="email"
+              :placeholder="t('login.emailPlaceholder')"
+              class="login__input"
+            />
+          </div>
+
+          <div class="login__form-group">
+            <label class="login__label">{{ t('login.passwordLabel') }}</label>
+            <Password
+              v-model="password"
+              :placeholder="t('login.passwordPlaceholder')"
+              toggleMask
+              class="login__input"
+              inputClass="w-full"
+            />
+          </div>
+
+          <div class="login__form-group">
+            <label class="login__label">{{ t('login.confirmPasswordLabel') }}</label>
+            <Password
+              v-model="confirmPassword"
+              :placeholder="t('login.confirmPasswordPlaceholder')"
+              :feedback="false"
+              toggleMask
+              class="login__input"
+              inputClass="w-full"
+              @keyup.enter="handleRegister"
+            />
+            <small v-if="password && confirmPassword && password !== confirmPassword" class="login__hint-error">
+              {{ t('login.passwordMismatch') }}
+            </small>
+          </div>
+
+          <Button
+            :label="t('login.registerButton')"
+            icon="pi pi-user-plus"
+            iconPos="right"
+            class="login__btn"
+            :loading="loading"
+            :disabled="!email || !password || password !== confirmPassword"
+            @click="handleRegister"
+          />
+
+          <p v-if="authStore.error" class="login__error">
+            {{ authStore.error }}
+          </p>
+
+          <div class="login__switch">
+            {{ t('login.hasAccount') }}
+            <button @click="switchMode('login')">{{ t('login.loginLink') }}</button>
+          </div>
+        </div>
+
+        <!-- Forgot Password Form -->
+        <div v-else-if="mode === 'forgot'" class="login__form">
+          <button class="login__back" @click="switchMode('login')">
+            <i class="pi pi-arrow-left"></i>
+            {{ t('common.back') }}
+          </button>
+
+          <div v-if="!resetEmailSent">
+            <p class="login__info">{{ t('login.forgotInfo') }}</p>
+
+            <div class="login__form-group">
+              <label class="login__label">{{ t('login.emailLabel') }}</label>
+              <InputText
+                v-model="email"
+                type="email"
+                :placeholder="t('login.emailPlaceholder')"
+                class="login__input"
+                @keyup.enter="handleResetPassword"
+              />
+            </div>
+
+            <Button
+              :label="t('login.resetButton')"
+              icon="pi pi-envelope"
+              iconPos="right"
+              class="login__btn"
+              :loading="loading"
+              :disabled="!email"
+              @click="handleResetPassword"
+            />
+
+            <p v-if="authStore.error" class="login__error">
+              {{ authStore.error }}
+            </p>
+          </div>
+
+          <div v-else class="login__success">
+            <i class="pi pi-check-circle"></i>
+            <p>{{ t('login.resetEmailSent') }}</p>
+            <Button
+              :label="t('login.backToLogin')"
+              class="login__btn login__btn--outline"
+              @click="switchMode('login')"
+            />
+          </div>
         </div>
 
         <!-- Name Step -->
-        <div v-else-if="step === 'name'" class="login__form">
-          <p class="login__info">
-            Chào mừng bạn! Hãy cho chúng tôi biết tên của bạn.
-          </p>
+        <div v-else-if="mode === 'name'" class="login__form">
+          <p class="login__info">{{ t('login.welcome') }}</p>
 
           <div class="login__form-group">
-            <label class="login__label">Họ và tên</label>
+            <label class="login__label">{{ t('login.nameLabel') }}</label>
             <InputText
               v-model="displayName"
-              placeholder="Nguyễn Văn A"
+              :placeholder="t('login.namePlaceholder')"
               class="login__input"
               @keyup.enter="handleSetName"
             />
           </div>
 
           <Button
-            label="Bắt đầu"
+            :label="t('login.start')"
             icon="pi pi-check"
             iconPos="right"
             class="login__btn"
@@ -178,13 +277,11 @@ function goBack() {
             @click="handleSetName"
           />
         </div>
-
-        <div id="recaptcha-container"></div>
       </div>
 
       <p class="login__footer">
-        Bằng việc đăng nhập, bạn đồng ý với<br>
-        <a href="#">Điều khoản sử dụng</a> và <a href="#">Chính sách bảo mật</a>
+        {{ t('login.terms') }}<br>
+        <a href="#">{{ t('login.termsLink') }}</a> {{ t('login.and') }} <a href="#">{{ t('login.privacyLink') }}</a>
       </p>
     </div>
   </div>
@@ -231,7 +328,7 @@ function goBack() {
 
   &__header {
     text-align: center;
-    margin-bottom: $spacing-2xl;
+    margin-bottom: $spacing-xl;
   }
 
   &__logo {
@@ -242,7 +339,7 @@ function goBack() {
     @include flex-center;
     color: white;
     font-weight: 700;
-    font-size: $font-size-4xl;
+    font-size: $font-size-3xl;
     margin: 0 auto $spacing-lg;
     box-shadow: $shadow-lg;
   }
@@ -257,9 +354,33 @@ function goBack() {
     font-size: $font-size-sm;
   }
 
+  &__demo-notice {
+    text-align: center;
+    margin-bottom: $spacing-lg;
+    padding: $spacing-md;
+    background: rgba($warning, 0.1);
+    border-radius: $radius-md;
+    
+    p {
+      font-size: $font-size-sm;
+      color: $text-secondary;
+      margin-top: $spacing-xs;
+    }
+  }
+
+  &__demo-badge {
+    display: inline-block;
+    background: $warning;
+    color: $text-primary;
+    padding: $spacing-xs $spacing-sm;
+    border-radius: $radius-sm;
+    font-size: $font-size-xs;
+    font-weight: 700;
+  }
+
   &__form {
     @include flex-column;
-    gap: $spacing-lg;
+    gap: $spacing-md;
   }
 
   &__form-group {
@@ -273,33 +394,13 @@ function goBack() {
     font-size: $font-size-sm;
   }
 
-  &__phone-input {
-    display: flex;
-    align-items: center;
-    background: $surface-alt;
-    border-radius: $radius-md;
-    overflow: hidden;
-  }
-
-  &__phone-prefix {
-    padding: $spacing-md;
-    background: rgba($primary, 0.1);
-    color: $primary;
-    font-weight: 600;
-    border-right: 2px solid $surface;
-  }
-
   &__input {
-    flex: 1;
-    border: none !important;
-    background: transparent !important;
+    width: 100%;
+  }
 
-    &--otp {
-      text-align: center;
-      font-size: $font-size-2xl;
-      letter-spacing: 0.5rem;
-      font-weight: 600;
-    }
+  &__hint-error {
+    color: $error;
+    font-size: $font-size-xs;
   }
 
   &__btn {
@@ -308,9 +409,30 @@ function goBack() {
     @include gradient-primary;
     border: none;
     font-weight: 600;
+    margin-top: $spacing-sm;
 
     &:hover:not(:disabled) {
       opacity: 0.95;
+    }
+
+    &--outline {
+      background: transparent;
+      border: 2px solid $primary;
+      color: $primary;
+    }
+  }
+
+  &__forgot {
+    align-self: flex-end;
+    background: transparent;
+    border: none;
+    color: $primary;
+    font-size: $font-size-sm;
+    cursor: pointer;
+    padding: 0;
+
+    &:hover {
+      text-decoration: underline;
     }
   }
 
@@ -324,9 +446,31 @@ function goBack() {
     cursor: pointer;
     font-size: $font-size-sm;
     padding: 0;
+    margin-bottom: $spacing-sm;
 
     &:hover {
       color: $primary;
+    }
+  }
+
+  &__switch {
+    text-align: center;
+    color: $text-secondary;
+    font-size: $font-size-sm;
+    margin-top: $spacing-md;
+
+    button {
+      background: transparent;
+      border: none;
+      color: $primary;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0;
+      margin-left: $spacing-xs;
+
+      &:hover {
+        text-decoration: underline;
+      }
     }
   }
 
@@ -334,6 +478,7 @@ function goBack() {
     text-align: center;
     color: $text-secondary;
     line-height: 1.6;
+    margin-bottom: $spacing-sm;
 
     strong {
       color: $text-primary;
@@ -349,15 +494,20 @@ function goBack() {
     border-radius: $radius-md;
   }
 
-  &__demo-badge {
-    display: inline-block;
-    background: $warning;
-    color: $text-primary;
-    padding: $spacing-xs $spacing-sm;
-    border-radius: $radius-sm;
-    font-size: $font-size-xs;
-    font-weight: 700;
-    margin-bottom: $spacing-sm;
+  &__success {
+    text-align: center;
+    padding: $spacing-lg;
+
+    .pi-check-circle {
+      font-size: 3rem;
+      color: $success;
+      margin-bottom: $spacing-md;
+    }
+
+    p {
+      color: $text-secondary;
+      margin-bottom: $spacing-lg;
+    }
   }
 
   &__footer {
@@ -378,4 +528,3 @@ function goBack() {
   }
 }
 </style>
-

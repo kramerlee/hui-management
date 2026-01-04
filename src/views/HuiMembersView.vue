@@ -20,7 +20,7 @@ const toast = useToast()
 
 const groupId = computed(() => route.params.id as string)
 const showAddDialog = ref(false)
-const newMember = ref<HuiMemberForm>({ name: '', phone: '' })
+const newMember = ref<HuiMemberForm>({ name: '', email: '' })
 const formErrors = ref<Record<string, string>>({})
 const isSubmitting = ref(false)
 
@@ -41,7 +41,7 @@ function formatDate(dateStr: string): string {
 }
 
 function openAddDialog() {
-  newMember.value = { name: '', phone: '' }
+  newMember.value = { name: '', email: '' }
   formErrors.value = {}
   showAddDialog.value = true
 }
@@ -53,10 +53,10 @@ function validateForm(): boolean {
     formErrors.value.name = 'Vui lòng nhập họ tên'
   }
   
-  if (!newMember.value.phone.trim()) {
-    formErrors.value.phone = 'Vui lòng nhập số điện thoại'
-  } else if (!/^[0-9]{9,11}$/.test(newMember.value.phone.replace(/\s/g, ''))) {
-    formErrors.value.phone = 'Số điện thoại không hợp lệ'
+  if (!newMember.value.email.trim()) {
+    formErrors.value.email = 'Vui lòng nhập email'
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newMember.value.email)) {
+    formErrors.value.email = 'Email không hợp lệ'
   }
   
   return Object.keys(formErrors.value).length === 0
@@ -161,10 +161,10 @@ function confirmRemove(member: HuiMember) {
               </template>
             </Column>
             <Column field="name" header="Họ tên" sortable />
-            <Column field="phone" header="Số điện thoại">
+            <Column field="email" header="Email">
               <template #body="{ data }">
-                <a :href="`tel:${data.phone}`" class="hui-members__phone">
-                  {{ data.phone }}
+                <a :href="`mailto:${data.email}`" class="hui-members__email">
+                  {{ data.email }}
                 </a>
               </template>
             </Column>
@@ -234,13 +234,14 @@ function confirmRemove(member: HuiMember) {
           </div>
 
           <div class="hui-members__form-group">
-            <label class="label">Số điện thoại <span class="required">*</span></label>
+            <label class="label">Email <span class="required">*</span></label>
             <InputText
-              v-model="newMember.phone"
-              placeholder="0912345678"
-              :class="{ 'p-invalid': formErrors.phone }"
+              v-model="newMember.email"
+              type="email"
+              placeholder="email@example.com"
+              :class="{ 'p-invalid': formErrors.email }"
             />
-            <small v-if="formErrors.phone" class="error-text">{{ formErrors.phone }}</small>
+            <small v-if="formErrors.email" class="error-text">{{ formErrors.email }}</small>
           </div>
         </div>
 
@@ -318,7 +319,7 @@ function confirmRemove(member: HuiMember) {
     font-size: $font-size-sm;
   }
 
-  &__phone {
+  &__email {
     color: $primary;
     text-decoration: none;
 
