@@ -241,21 +241,26 @@ function handleCTAClick(eventName: CTAEventName, label?: string) {
 <style scoped lang="scss">
 @use '@/assets/styles/variables' as *;
 
-// Typography
+// Typography - Use design tokens
 $font-display: 'Playfair Display', 'Noto Serif', Georgia, serif;
-$font-body: 'Be Vietnam Pro', 'Nunito Sans', system-ui, sans-serif;
+$font-body: $font-family;
 
-// Colors - Warm earth tones with Vietnamese inspiration
-$color-primary: #c9553d;
-$color-primary-dark: #a84432;
-$color-primary-light: #e87a65;
-$color-secondary: #2d3a3a;
-$color-accent: #d4a574;
-$color-cream: #faf6f1;
-$color-warm-white: #fffbf7;
-$color-text: #2d2d2d;
-$color-text-light: #6b6b6b;
-$color-gold: #c9a962;
+// Colors - Use design tokens from _variables.scss
+$color-primary: $primary;
+$color-primary-dark: $primary-dark;
+$color-primary-light: $primary-light;
+$color-secondary: $accent-dark;
+$color-accent: $secondary;
+$color-cream: $surface-alt;
+$color-warm-white: $background;
+$color-text: $text-primary;
+$color-text-light: $text-secondary;
+$color-gold: $secondary-light;
+
+// Opacity tokens for consistent contrast
+$opacity-high: 0.95;      // High emphasis text on colored backgrounds
+$opacity-medium: 0.85;    // Medium emphasis text
+$opacity-low: 0.75;       // Low emphasis/muted text
 
 // Landing page styles
 .landing {
@@ -265,22 +270,22 @@ $color-gold: #c9a962;
 }
 
 .container {
-  max-width: 1200px;
+  max-width: $breakpoint-xl;
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding: 0 $spacing-lg;
 }
 
 // Button styles
 .btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
+  gap: $spacing-sm;
+  padding: $spacing-md $spacing-lg;
+  border-radius: $radius-md;
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: $font-size-sm;
   text-decoration: none;
-  transition: all 0.3s ease;
+  transition: all $transition-base;
   cursor: pointer;
   border: none;
   
@@ -317,8 +322,8 @@ $color-gold: #c9a962;
   }
   
   &--large {
-    padding: 1rem 2rem;
-    font-size: 1.05rem;
+    padding: $spacing-md $spacing-xl;
+    font-size: $font-size-base;
   }
 }
 
@@ -472,15 +477,15 @@ $color-gold: #c9a962;
   
   &__card {
     position: absolute;
-    background: white;
-    border-radius: 12px;
-    padding: 0.875rem 1rem;
+    background: $surface;
+    border-radius: $radius-md;
+    padding: $spacing-md $spacing-md;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+    gap: $spacing-sm;
+    box-shadow: $shadow-lg;
     animation: float 6s ease-in-out infinite;
-    font-size: 0.9rem;
+    font-size: $font-size-sm;
     white-space: nowrap;
     
     @media (max-width: 900px) {
@@ -525,13 +530,13 @@ $color-gold: #c9a962;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: white;
-    border-radius: 20px;
-    padding: 1.75rem;
+    background: $surface;
+    border-radius: $radius-xl;
+    padding: $spacing-lg;
     width: 260px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+    box-shadow: $shadow-xl;
     border: 1px solid rgba($color-gold, 0.2);
-    z-index: 10;
+    z-index: $z-dropdown;
     
     @media (max-width: 900px) {
       width: 240px;
@@ -673,11 +678,11 @@ $color-gold: #c9a962;
   }
   
   &__label {
-    color: rgba(white, 0.7);
-    font-size: 0.9rem;
+    color: rgba(white, $opacity-medium);
+    font-size: $font-size-sm;
     
     @media (max-width: 400px) {
-      font-size: 0.75rem;
+      font-size: $font-size-xs;
     }
   }
 }
@@ -694,7 +699,7 @@ $color-gold: #c9a962;
     }
     
     .section-subtitle {
-      color: rgba(white, 0.8);
+      color: rgba(white, $opacity-high);
     }
   }
 }
@@ -716,54 +721,54 @@ $color-gold: #c9a962;
 
 // Features section
 .features {
-  padding: 6rem 0;
+  padding: $spacing-3xl 0;
   background: $color-cream;
   
   &__grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 2rem;
+    gap: $spacing-xl;
     
-    @media (max-width: 900px) {
+    @media (max-width: $breakpoint-lg) {
       grid-template-columns: repeat(2, 1fr);
     }
     
-    @media (max-width: 600px) {
+    @media (max-width: $breakpoint-sm) {
       grid-template-columns: 1fr;
     }
   }
 }
 
 .feature-card {
-  background: white;
-  border-radius: 16px;
-  padding: 2rem;
-  transition: all 0.3s ease;
+  background: $surface;
+  border-radius: $radius-lg;
+  padding: $spacing-xl;
+  transition: all $transition-base;
   border: 1px solid transparent;
   
   &:hover {
     transform: translateY(-8px);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+    box-shadow: $shadow-xl;
     border-color: rgba($color-primary, 0.2);
   }
   
   &__icon {
-    font-size: 2.5rem;
-    margin-bottom: 1.25rem;
+    font-size: $font-size-4xl;
+    margin-bottom: $spacing-md;
   }
   
   &__title {
     font-family: $font-display;
-    font-size: 1.25rem;
+    font-size: $font-size-xl;
     font-weight: 700;
     color: $color-secondary;
-    margin-bottom: 0.75rem;
+    margin-bottom: $spacing-sm;
   }
   
   &__description {
     color: $color-text-light;
     line-height: 1.6;
-    font-size: 0.95rem;
+    font-size: $font-size-sm;
   }
 }
 
@@ -824,9 +829,9 @@ $color-gold: #c9a962;
   }
   
   &__description {
-    color: rgba(white, 0.7);
+    color: rgba(white, $opacity-medium);
     line-height: 1.6;
-    font-size: 0.95rem;
+    font-size: $font-size-sm;
   }
   
   &__connector {
@@ -857,9 +862,9 @@ $color-gold: #c9a962;
   }
   
   &__subtitle {
-    color: rgba(white, 0.85);
-    font-size: 1.15rem;
-    margin-bottom: 2.5rem;
+    color: rgba(white, $opacity-high);
+    font-size: $font-size-lg;
+    margin-bottom: $spacing-xl;
     max-width: 500px;
     margin-left: auto;
     margin-right: auto;
@@ -900,11 +905,11 @@ $color-gold: #c9a962;
   }
   
   &__info {
-    color: rgba(white, 0.6);
+    color: rgba(white, $opacity-low);
     text-align: right;
-    font-size: 0.9rem;
+    font-size: $font-size-sm;
     
-    @media (max-width: 600px) {
+    @media (max-width: $breakpoint-sm) {
       text-align: center;
     }
   }
