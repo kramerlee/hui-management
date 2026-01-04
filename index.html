@@ -67,6 +67,17 @@
       "inLanguage": "vi"
     }
     </script>
+    <!-- SPA Redirect Handler for GitHub Pages -->
+    <script>
+      // Handle redirect from 404.html
+      (function() {
+        var redirect = sessionStorage.redirect;
+        delete sessionStorage.redirect;
+        if (redirect && redirect !== location.href) {
+          history.replaceState(null, null, redirect);
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="app"></div>
