@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Button from 'primevue/button'
+import logoUrl from '/favicon.svg?url'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -102,7 +103,7 @@ function switchMode(newMode: AuthMode) {
     <div class="login__container">
       <div class="login__card">
         <div class="login__header">
-          <div class="login__logo">囍</div>
+          <img :src="logoUrl" alt="Logo" class="login__logo" />
           <h1 class="login__title">{{ t('app.name') }}</h1>
           <p class="login__subtitle">{{ t('app.tagline') }}</p>
         </div>
@@ -374,13 +375,8 @@ function switchMode(newMode: AuthMode) {
   &__logo {
     width: 72px;
     height: 72px;
-    @include gradient-primary;
-    border-radius: $radius-xl;
-    @include flex-center;
-    color: white;
-    font-weight: 700;
-    font-size: $font-size-3xl;
     margin: 0 auto $spacing-lg;
+    border-radius: $radius-xl;
     box-shadow: $shadow-lg;
   }
 

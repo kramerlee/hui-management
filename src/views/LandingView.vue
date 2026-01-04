@@ -10,7 +10,7 @@
       <nav class="nav">
         <div class="nav__container">
           <div class="nav__logo">
-            <span class="nav__logo-icon">囍</span>
+            <img :src="logoUrl" alt="Logo" class="nav__logo-icon" />
             <span class="nav__logo-text">{{ t('app.name') }}</span>
           </div>
           <div class="nav__actions">
@@ -197,7 +197,7 @@
       <div class="container">
         <div class="footer__content">
           <div class="footer__logo">
-            <span class="footer__logo-icon">囍</span>
+            <img :src="logoUrl" alt="Logo" class="footer__logo-icon" />
             <span class="footer__logo-text">{{ t('app.name') }}</span>
           </div>
           <div class="footer__info">
@@ -215,6 +215,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores'
 import { useAnalytics, type CTAEventName } from '@/composables/useAnalytics'
+import logoUrl from '/favicon.svg?url'
 
 const { t } = useI18n()
 const authStore = useAuthStore()
@@ -356,8 +357,9 @@ $opacity-low: 0.75;       // Low emphasis/muted text
   }
   
   &__logo-icon {
-    font-size: 2rem;
-    color: $color-primary;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
   }
 }
 
@@ -900,8 +902,9 @@ $opacity-low: 0.75;       // Low emphasis/muted text
   }
   
   &__logo-icon {
-    font-size: 1.5rem;
-    color: $color-gold;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
   }
   
   &__info {
