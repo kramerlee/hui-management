@@ -457,11 +457,16 @@ $color-gold: #c9a962;
   &__visual {
     position: relative;
     height: 450px;
+    overflow: hidden;
     
     @media (max-width: 900px) {
       order: 1;
-      height: 350px;
-      margin-bottom: 2rem;
+      height: 320px;
+      margin-bottom: 1rem;
+    }
+    
+    @media (max-width: 500px) {
+      height: 280px;
     }
   }
   
@@ -469,28 +474,39 @@ $color-gold: #c9a962;
     position: absolute;
     background: white;
     border-radius: 12px;
-    padding: 1rem 1.25rem;
+    padding: 0.875rem 1rem;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
     animation: float 6s ease-in-out infinite;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    
+    @media (max-width: 900px) {
+      padding: 0.75rem 0.875rem;
+      font-size: 0.8rem;
+    }
+    
+    @media (max-width: 500px) {
+      display: none;
+    }
     
     &--1 {
-      top: 10%;
-      left: 0;
+      top: 8%;
+      left: 5%;
       animation-delay: 0s;
     }
     
     &--2 {
-      top: 30%;
-      right: 0;
+      top: 25%;
+      right: 5%;
       animation-delay: 1s;
     }
     
     &--3 {
-      bottom: 20%;
-      left: 10%;
+      bottom: 25%;
+      left: 8%;
       animation-delay: 2s;
     }
   }
@@ -511,14 +527,20 @@ $color-gold: #c9a962;
     transform: translate(-50%, -50%);
     background: white;
     border-radius: 20px;
-    padding: 2rem;
-    width: 280px;
+    padding: 1.75rem;
+    width: 260px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
     border: 1px solid rgba($color-gold, 0.2);
+    z-index: 10;
     
     @media (max-width: 900px) {
-      width: 260px;
-      padding: 1.5rem;
+      width: 240px;
+      padding: 1.25rem;
+    }
+    
+    @media (max-width: 500px) {
+      width: 220px;
+      padding: 1rem;
     }
   }
   
@@ -606,21 +628,31 @@ $color-gold: #c9a962;
 // Stats section
 .stats {
   background: $color-secondary;
-  padding: 4rem 0;
+  padding: 3rem 0;
+  
+  @media (max-width: 768px) {
+    padding: 2.5rem 0;
+  }
   
   &__grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 2rem;
+    gap: 1.5rem;
     text-align: center;
     
     @media (max-width: 768px) {
       grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+    
+    @media (max-width: 400px) {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.5rem;
     }
   }
   
   &__item {
-    padding: 1rem;
+    padding: 0.75rem 0.5rem;
   }
   
   &__value {
@@ -629,12 +661,24 @@ $color-gold: #c9a962;
     font-size: 2.5rem;
     font-weight: 700;
     color: $color-gold;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
+    
+    @media (max-width: 768px) {
+      font-size: 2rem;
+    }
+    
+    @media (max-width: 400px) {
+      font-size: 1.5rem;
+    }
   }
   
   &__label {
     color: rgba(white, 0.7);
-    font-size: 0.95rem;
+    font-size: 0.9rem;
+    
+    @media (max-width: 400px) {
+      font-size: 0.75rem;
+    }
   }
 }
 
@@ -776,6 +820,7 @@ $color-gold: #c9a962;
     font-size: 1.25rem;
     font-weight: 700;
     margin-bottom: 0.75rem;
+    color: white;
   }
   
   &__description {
