@@ -133,6 +133,56 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function loginWithGoogle() {
+    error.value = null
+    
+    // Demo mode - simulate Google login
+    if (isDemoMode.value) {
+      const demoProfile: UserProfile = {
+        uid: 'demo-google-user-' + Date.now(),
+        email: 'demo@gmail.com',
+        displayName: 'Demo User',
+        createdAt: new Date().toISOString()
+      }
+      userProfile.value = demoProfile
+      localStorage.setItem('hui_demo_user', JSON.stringify(demoProfile))
+      return true
+    }
+    
+    const loaded = await loadFirebaseModules()
+    if (!loaded || !firebaseAuth) {
+      error.value = 'Firebase không khả dụng'
+      return false
+    }
+    
+    try {
+      const auth = await getFirebaseAuth()
+      if (!auth) {
+        throw new Error('Firebase Auth chưa được khởi tạo')
+      }
+      
+      const provider = new firebaseAuth.GoogleAuthProvider()
+      provider.addScope('email')
+      provider.addScope('profile')
+      
+      const result = await firebaseAuth.signInWithPopup(auth, provider)
+      user.value = result.user
+      
+      // Create or update user profile
+      await createUserProfile(result.user)
+      
+      return true
+    } catch (e: unknown) {
+      const firebaseError = e as { code?: string; message?: string }
+      // Handle popup closed by user
+      if (firebaseError.code === 'auth/popup-closed-by-user') {
+        return false
+      }
+      error.value = getErrorMessage(firebaseError.code || firebaseError.message || 'Unknown error')
+      return false
+    }
+  }
+
   function getErrorMessage(code: string): string {
     const messages: Record<string, string> = {
       'auth/email-already-in-use': 'Email này đã được sử dụng',
@@ -291,6 +341,7 @@ export const useAuthStore = defineStore('auth', () => {
     isDemoMode,
     register,
     login,
+    loginWithGoogle,
     resetPassword,
     updateUserName,
     logout,

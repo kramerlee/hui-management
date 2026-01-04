@@ -60,6 +60,22 @@ async function handleResetPassword() {
   }
 }
 
+const googleLoading = ref(false)
+
+async function handleGoogleLogin() {
+  googleLoading.value = true
+  const success = await authStore.loginWithGoogle()
+  googleLoading.value = false
+  
+  if (success) {
+    if (!authStore.userProfile?.displayName) {
+      mode.value = 'name'
+    } else {
+      router.push('/dashboard')
+    }
+  }
+}
+
 async function handleSetName() {
   if (!displayName.value.trim()) return
   
@@ -137,6 +153,18 @@ function switchMode(newMode: AuthMode) {
             @click="handleLogin"
           />
 
+          <div class="login__divider">
+            <span>{{ t('login.or') }}</span>
+          </div>
+
+          <Button
+            :label="t('login.googleButton')"
+            icon="pi pi-google"
+            class="login__btn login__btn--google"
+            :loading="googleLoading"
+            @click="handleGoogleLogin"
+          />
+
           <p v-if="authStore.error" class="login__error">
             {{ authStore.error }}
           </p>
@@ -194,6 +222,18 @@ function switchMode(newMode: AuthMode) {
             :loading="loading"
             :disabled="!email || !password || password !== confirmPassword"
             @click="handleRegister"
+          />
+
+          <div class="login__divider">
+            <span>{{ t('login.or') }}</span>
+          </div>
+
+          <Button
+            :label="t('login.googleButton')"
+            icon="pi pi-google"
+            class="login__btn login__btn--google"
+            :loading="googleLoading"
+            @click="handleGoogleLogin"
           />
 
           <p v-if="authStore.error" class="login__error">
@@ -419,6 +459,42 @@ function switchMode(newMode: AuthMode) {
       background: transparent;
       border: 2px solid $primary;
       color: $primary;
+    }
+
+    &--google {
+      background: $surface;
+      color: $text-primary;
+      border: 1px solid rgba($text-secondary, 0.3);
+      margin-top: 0;
+
+      &:hover:not(:disabled) {
+        background: $surface-alt;
+        border-color: rgba($text-secondary, 0.5);
+      }
+
+      :deep(.pi-google) {
+        color: #ea4335;
+      }
+    }
+  }
+
+  &__divider {
+    display: flex;
+    align-items: center;
+    margin: $spacing-md 0;
+
+    &::before,
+    &::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: rgba($text-secondary, 0.2);
+    }
+
+    span {
+      padding: 0 $spacing-md;
+      color: $text-secondary;
+      font-size: $font-size-sm;
     }
   }
 

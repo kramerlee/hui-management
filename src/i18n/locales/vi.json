@@ -105,6 +105,8 @@
     "hasAccount": "Đã có tài khoản?",
     "registerLink": "Đăng ký ngay",
     "loginLink": "Đăng nhập",
+    "or": "hoặc",
+    "googleButton": "Đăng nhập với Google",
     "demoMode": "CHẾ ĐỘ DEMO",
     "demoInfo": "Sử dụng bất kỳ email/mật khẩu nào để đăng nhập",
     "nameLabel": "Họ và tên",
