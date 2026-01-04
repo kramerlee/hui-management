@@ -14,10 +14,20 @@
             <span class="nav__logo-text">{{ t('app.name') }}</span>
           </div>
           <div class="nav__actions">
-            <router-link v-if="isAuthenticated" to="/dashboard" class="btn btn--primary">
+            <router-link 
+              v-if="isAuthenticated" 
+              to="/dashboard" 
+              class="btn btn--primary"
+              @click="handleCTAClick('cta_nav_dashboard')"
+            >
               {{ t('nav.dashboard') }}
             </router-link>
-            <router-link v-else to="/login" class="btn btn--primary">
+            <router-link 
+              v-else 
+              to="/login" 
+              class="btn btn--primary"
+              @click="handleCTAClick('cta_nav_login')"
+            >
               {{ t('nav.login') }}
             </router-link>
           </div>
@@ -32,11 +42,19 @@
           </h1>
           <p class="hero__subtitle">{{ t('landing.hero.subtitle') }}</p>
           <div class="hero__cta">
-            <router-link to="/login" class="btn btn--large btn--primary">
+            <router-link 
+              to="/login" 
+              class="btn btn--large btn--primary"
+              @click="handleCTAClick('cta_hero_primary', 'bat_dau_mien_phi')"
+            >
               {{ t('landing.hero.cta') }}
               <i class="pi pi-arrow-right"></i>
             </router-link>
-            <a href="#features" class="btn btn--large btn--outline">
+            <a 
+              href="#features" 
+              class="btn btn--large btn--outline"
+              @click="handleCTAClick('cta_hero_secondary', 'tim_hieu_them')"
+            >
               {{ t('landing.hero.ctaSecondary') }}
             </a>
           </div>
@@ -162,7 +180,11 @@
         <div class="cta__content">
           <h2 class="cta__title">{{ t('landing.cta.title') }}</h2>
           <p class="cta__subtitle">{{ t('landing.cta.subtitle') }}</p>
-          <router-link to="/login" class="btn btn--large btn--white">
+          <router-link 
+            to="/login" 
+            class="btn btn--large btn--white"
+            @click="handleCTAClick('cta_footer_signup', 'dang_ky_mien_phi')"
+          >
             {{ t('landing.cta.button') }}
             <i class="pi pi-arrow-right"></i>
           </router-link>
@@ -192,9 +214,11 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores'
+import { useAnalytics, type CTAEventName } from '@/composables/useAnalytics'
 
 const { t } = useI18n()
 const authStore = useAuthStore()
+const { trackCTAClick } = useAnalytics()
 
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const currentYear = new Date().getFullYear()
@@ -206,6 +230,11 @@ const features = {
   reports: { icon: '📊' },
   security: { icon: '🔐' },
   mobile: { icon: '📱' }
+}
+
+// CTA tracking handlers
+function handleCTAClick(eventName: CTAEventName, label?: string) {
+  trackCTAClick(eventName, label)
 }
 </script>
 
