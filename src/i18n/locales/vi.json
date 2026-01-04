@@ -1,0 +1,180 @@
+{
+  "app": {
+    "name": "Quản Lý Hụi",
+    "tagline": "Hệ thống quản lý dây hụi thông minh",
+    "description": "Giải pháp số hóa hoàn chỉnh cho việc quản lý hụi truyền thống Việt Nam"
+  },
+  "nav": {
+    "home": "Trang chủ",
+    "dashboard": "Dashboard",
+    "huiList": "Dây Hụi",
+    "login": "Đăng nhập",
+    "logout": "Đăng xuất",
+    "getStarted": "Bắt đầu ngay"
+  },
+  "landing": {
+    "hero": {
+      "title": "Quản lý hụi",
+      "titleHighlight": "thông minh & hiện đại",
+      "subtitle": "Số hóa việc quản lý dây hụi truyền thống. Theo dõi hụi viên, kỳ hụi và thanh toán một cách dễ dàng, minh bạch.",
+      "cta": "Bắt đầu miễn phí",
+      "ctaSecondary": "Tìm hiểu thêm"
+    },
+    "features": {
+      "title": "Tính năng nổi bật",
+      "subtitle": "Mọi thứ bạn cần để quản lý dây hụi hiệu quả",
+      "items": {
+        "members": {
+          "title": "Quản lý hụi viên",
+          "description": "Thêm, sửa, theo dõi thông tin và trạng thái của từng hụi viên trong dây hụi."
+        },
+        "periods": {
+          "title": "Theo dõi kỳ hụi",
+          "description": "Quản lý từng kỳ khui hụi, ghi nhận người hốt và số tiền chân một cách chi tiết."
+        },
+        "payments": {
+          "title": "Quản lý thanh toán",
+          "description": "Theo dõi tiền đóng hụi của từng thành viên, nhắc nhở thanh toán tự động."
+        },
+        "reports": {
+          "title": "Báo cáo tổng quan",
+          "description": "Dashboard trực quan với các số liệu thống kê quan trọng, dễ dàng nắm bắt tình hình."
+        },
+        "security": {
+          "title": "Bảo mật cao",
+          "description": "Xác thực bằng số điện thoại, dữ liệu được mã hóa và bảo vệ an toàn."
+        },
+        "mobile": {
+          "title": "Tương thích mọi thiết bị",
+          "description": "Sử dụng mượt mà trên điện thoại, máy tính bảng và máy tính để bàn."
+        }
+      }
+    },
+    "howItWorks": {
+      "title": "Cách hoạt động",
+      "subtitle": "Bắt đầu quản lý hụi chỉ với 3 bước đơn giản",
+      "steps": {
+        "step1": {
+          "title": "Đăng ký tài khoản",
+          "description": "Đăng nhập nhanh chóng bằng số điện thoại, không cần mật khẩu phức tạp."
+        },
+        "step2": {
+          "title": "Tạo dây hụi",
+          "description": "Thiết lập dây hụi mới với số người, số tiền và chu kỳ theo ý muốn."
+        },
+        "step3": {
+          "title": "Quản lý dễ dàng",
+          "description": "Thêm hụi viên, theo dõi kỳ khui và quản lý thanh toán một cách minh bạch."
+        }
+      }
+    },
+    "stats": {
+      "users": "Chủ hụi tin dùng",
+      "huiGroups": "Dây hụi đang hoạt động",
+      "transactions": "Giao dịch đã xử lý",
+      "satisfaction": "Mức độ hài lòng"
+    },
+    "cta": {
+      "title": "Sẵn sàng số hóa việc quản lý hụi?",
+      "subtitle": "Tham gia ngay hôm nay và trải nghiệm sự tiện lợi của công nghệ.",
+      "button": "Đăng ký miễn phí"
+    },
+    "footer": {
+      "copyright": "© {year} Quản Lý Hụi. Đã đăng ký bản quyền.",
+      "madeWith": "Được phát triển với",
+      "inVietnam": "tại Việt Nam"
+    }
+  },
+  "login": {
+    "title": "Đăng nhập",
+    "phoneLabel": "Số điện thoại",
+    "phonePlaceholder": "912 345 678",
+    "continue": "Tiếp tục",
+    "otpLabel": "Nhập mã OTP",
+    "verify": "Xác nhận",
+    "back": "Quay lại",
+    "demoMode": "CHẾ ĐỘ DEMO",
+    "demoOtp": "Nhập mã {code} để đăng nhập",
+    "nameLabel": "Họ và tên",
+    "namePlaceholder": "Nguyễn Văn A",
+    "welcome": "Chào mừng bạn! Hãy cho chúng tôi biết tên của bạn.",
+    "start": "Bắt đầu",
+    "terms": "Bằng việc đăng nhập, bạn đồng ý với",
+    "termsLink": "Điều khoản sử dụng",
+    "privacyLink": "Chính sách bảo mật",
+    "and": "và"
+  },
+  "dashboard": {
+    "greeting": "Xin chào, {name}!",
+    "overview": "Tổng quan về các dây hụi của bạn",
+    "totalHui": "Tổng dây hụi",
+    "activeHui": "Đang hoạt động",
+    "totalValue": "Tổng giá trị",
+    "pendingPayments": "Chờ thanh toán",
+    "recentHui": "Dây hụi gần đây",
+    "viewAll": "Xem tất cả",
+    "noHui": "Chưa có dây hụi nào",
+    "noHuiDesc": "Bắt đầu tạo dây hụi đầu tiên để quản lý",
+    "createHui": "Tạo dây hụi",
+    "quickActions": "Thao tác nhanh",
+    "createNew": "Tạo dây hụi mới",
+    "createNewDesc": "Khởi tạo một dây hụi mới với số người và số tiền tùy chọn",
+    "manageHui": "Quản lý dây hụi",
+    "manageHuiDesc": "Xem và quản lý tất cả các dây hụi đang hoạt động"
+  },
+  "hui": {
+    "list": "Danh sách dây hụi",
+    "create": "Tạo dây hụi",
+    "createNew": "Tạo Dây Hụi Mới",
+    "createDesc": "Điền thông tin để khởi tạo dây hụi",
+    "name": "Tên dây hụi",
+    "namePlaceholder": "VD: Hụi Tết 2026",
+    "members": "Số người tham gia",
+    "amount": "Số tiền mỗi kỳ",
+    "periodType": "Kỳ hạn",
+    "startDate": "Ngày bắt đầu",
+    "endDate": "Ngày kết thúc",
+    "cancel": "Hủy",
+    "save": "Lưu",
+    "daily": "Hàng ngày",
+    "weekly": "Hàng tuần",
+    "monthly": "Hàng tháng",
+    "summary": "Tổng quan",
+    "totalPeriods": "Tổng số kỳ",
+    "totalValue": "Tổng giá trị",
+    "expectedEnd": "Ngày kết thúc dự kiến",
+    "period": "kỳ",
+    "progress": "Tiến độ",
+    "huiMembers": "Hụi viên",
+    "huiPeriods": "Kỳ hụi",
+    "payments": "Thanh toán",
+    "pending": "đang chờ",
+    "people": "người",
+    "perPeriod": "Mỗi kỳ",
+    "totalPerPeriod": "Tổng mỗi kỳ",
+    "nextPeriod": "Kỳ hụi tiếp theo",
+    "openHui": "Khui hụi",
+    "backToList": "Danh sách dây hụi"
+  },
+  "common": {
+    "loading": "Đang tải...",
+    "error": "Có lỗi xảy ra",
+    "retry": "Thử lại",
+    "save": "Lưu",
+    "cancel": "Hủy",
+    "delete": "Xóa",
+    "edit": "Sửa",
+    "add": "Thêm",
+    "search": "Tìm kiếm",
+    "filter": "Lọc",
+    "noData": "Không có dữ liệu",
+    "confirm": "Xác nhận",
+    "back": "Quay lại"
+  },
+  "seo": {
+    "title": "Quản Lý Hụi - Hệ thống quản lý dây hụi thông minh",
+    "description": "Ứng dụng quản lý hụi hiện đại, giúp chủ hụi theo dõi hụi viên, kỳ hụi và thanh toán một cách dễ dàng, minh bạch. Miễn phí, bảo mật cao.",
+    "keywords": "quản lý hụi, hụi việt nam, chủ hụi, hụi viên, hụi online, quản lý tài chính, tiết kiệm, hụi thông minh"
+  }
+}
+

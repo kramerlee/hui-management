@@ -4,7 +4,9 @@ import { useAuthStore } from '@/stores'
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
-    redirect: '/dashboard'
+    name: 'Landing',
+    component: () => import('@/views/LandingView.vue'),
+    meta: { title: 'Quản Lý Hụi - Hệ thống quản lý dây hụi thông minh' }
   },
   {
     path: '/login',

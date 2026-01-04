@@ -7,6 +7,7 @@ import ConfirmationService from 'primevue/confirmationservice'
 
 import App from './App.vue'
 import router from './router'
+import i18n from './i18n'
 import { useAuthStore } from './stores'
 
 import 'primeicons/primeicons.css'
@@ -17,6 +18,7 @@ const pinia = createPinia()
 
 app.use(pinia)
 app.use(router)
+app.use(i18n)
 app.use(PrimeVue, {
   theme: {
     preset: Aura,
