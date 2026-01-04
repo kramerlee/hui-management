@@ -88,7 +88,7 @@
   "login": {
     "title": "Đăng nhập",
     "emailLabel": "Email",
-    "emailPlaceholder": "email@example.com",
+    "emailPlaceholder": "email{'@'}example.com",
     "passwordLabel": "Mật khẩu",
     "passwordPlaceholder": "Nhập mật khẩu",
     "confirmPasswordLabel": "Xác nhận mật khẩu",
