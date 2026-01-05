@@ -26,6 +26,12 @@ const isSubmitting = ref(false)
 const isDrawing = ref(false)
 const drawingName = ref('')
 
+// Swap functionality
+const showSwapDialog = ref(false)
+const swapPeriod1 = ref<string>('')
+const swapPeriod2 = ref<string>('')
+const isSwapping = ref(false)
+
 onMounted(async () => {
   await Promise.all([
     huiStore.fetchHuiGroup(groupId.value),
@@ -194,6 +200,71 @@ const winnerReceiveAmount = computed(() => {
   if (!selectedPeriod.value) return 0
   return selectedPeriod.value.totalAmount - bidForm.value.bidAmount
 })
+
+// Swappable periods (only pending periods with winners assigned)
+const swappablePeriods = computed(() => {
+  return huiStore.periods
+    .filter(p => p.status !== 'completed' && p.winnerId)
+    .map(p => ({
+      label: `Kỳ ${p.periodNumber} - ${p.winnerName} (${formatDate(p.date)})`,
+      value: p.id,
+      periodNumber: p.periodNumber,
+      winnerName: p.winnerName
+    }))
+})
+
+function openSwapDialog() {
+  swapPeriod1.value = ''
+  swapPeriod2.value = ''
+  showSwapDialog.value = true
+}
+
+async function handleSwap() {
+  if (!swapPeriod1.value || !swapPeriod2.value || swapPeriod1.value === swapPeriod2.value) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Cảnh báo',
+      detail: 'Vui lòng chọn 2 kỳ khác nhau để hoán đổi',
+      life: 3000
+    })
+    return
+  }
+
+  isSwapping.value = true
+  const success = await huiStore.swapPeriodWinners(swapPeriod1.value, swapPeriod2.value)
+  isSwapping.value = false
+
+  if (success) {
+    toast.add({
+      severity: 'success',
+      summary: 'Thành công',
+      detail: 'Đã hoán đổi người hốt giữa 2 kỳ',
+      life: 3000
+    })
+    showSwapDialog.value = false
+  } else {
+    toast.add({
+      severity: 'error',
+      summary: 'Lỗi',
+      detail: huiStore.error || 'Không thể hoán đổi',
+      life: 5000
+    })
+  }
+}
+
+const swapPreview = computed(() => {
+  if (!swapPeriod1.value || !swapPeriod2.value) return null
+  
+  const period1 = huiStore.periods.find(p => p.id === swapPeriod1.value)
+  const period2 = huiStore.periods.find(p => p.id === swapPeriod2.value)
+  
+  if (!period1 || !period2) return null
+  
+  return {
+    period1: { number: period1.periodNumber, winner: period1.winnerName, date: period1.date },
+    period2: { number: period2.periodNumber, winner: period2.winnerName, date: period2.date }
+  }
+})
 </script>
 
 <template>
@@ -205,11 +276,26 @@ const winnerReceiveAmount = computed(() => {
           {{ group?.name || 'Quay lại' }}
         </button>
         
-        <div>
-          <h1>Các kỳ hụi</h1>
-          <p v-if="group">
-            {{ group.currentPeriod }}/{{ group.totalMembers }} kỳ đã hoàn thành
-          </p>
+        <div class="hui-periods__header-content">
+          <div>
+            <h1>Các kỳ hụi</h1>
+            <p v-if="group">
+              {{ group.currentPeriod }}/{{ group.totalMembers }} kỳ đã hoàn thành
+              <span v-if="isRandomType" class="hui-periods__type-badge">
+                <i class="pi pi-sync"></i> Xoay vòng
+              </span>
+            </p>
+          </div>
+          
+          <!-- Swap button for random type -->
+          <Button
+            v-if="isRandomType && swappablePeriods.length >= 2"
+            label="Hoán đổi"
+            icon="pi pi-arrow-right-arrow-left"
+            severity="secondary"
+            outlined
+            @click="openSwapDialog"
+          />
         </div>
       </div>
 
@@ -467,6 +553,92 @@ const winnerReceiveAmount = computed(() => {
           />
         </template>
       </Dialog>
+
+      <!-- Swap Dialog -->
+      <Dialog
+        v-model:visible="showSwapDialog"
+        header="Hoán đổi người hốt"
+        :modal="true"
+        :style="{ width: '500px' }"
+      >
+        <div class="hui-periods__swap-form">
+          <p class="hui-periods__swap-desc">
+            Chọn 2 kỳ để hoán đổi người hốt. Chỉ có thể hoán đổi các kỳ chưa hoàn thành.
+          </p>
+
+          <div class="hui-periods__swap-selects">
+            <div class="hui-periods__form-group">
+              <label class="label">Kỳ thứ nhất</label>
+              <Dropdown
+                v-model="swapPeriod1"
+                :options="swappablePeriods"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Chọn kỳ hụi"
+                :filter="swappablePeriods.length > 5"
+              />
+            </div>
+
+            <div class="hui-periods__swap-icon">
+              <i class="pi pi-arrow-right-arrow-left"></i>
+            </div>
+
+            <div class="hui-periods__form-group">
+              <label class="label">Kỳ thứ hai</label>
+              <Dropdown
+                v-model="swapPeriod2"
+                :options="swappablePeriods.filter(p => p.value !== swapPeriod1)"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Chọn kỳ hụi"
+                :filter="swappablePeriods.length > 5"
+              />
+            </div>
+          </div>
+
+          <!-- Preview -->
+          <div v-if="swapPreview" class="hui-periods__swap-preview">
+            <div class="hui-periods__swap-preview-title">
+              <i class="pi pi-eye"></i>
+              Xem trước sau khi hoán đổi:
+            </div>
+            <div class="hui-periods__swap-preview-content">
+              <div class="hui-periods__swap-item">
+                <span class="hui-periods__swap-period">Kỳ {{ swapPreview.period1.number }}</span>
+                <span class="hui-periods__swap-date">{{ formatDate(swapPreview.period1.date) }}</span>
+                <span class="hui-periods__swap-arrow">→</span>
+                <span class="hui-periods__swap-winner hui-periods__swap-winner--new">
+                  {{ swapPreview.period2.winner }}
+                </span>
+              </div>
+              <div class="hui-periods__swap-item">
+                <span class="hui-periods__swap-period">Kỳ {{ swapPreview.period2.number }}</span>
+                <span class="hui-periods__swap-date">{{ formatDate(swapPreview.period2.date) }}</span>
+                <span class="hui-periods__swap-arrow">→</span>
+                <span class="hui-periods__swap-winner hui-periods__swap-winner--new">
+                  {{ swapPreview.period1.winner }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <template #footer>
+          <Button
+            label="Hủy"
+            severity="secondary"
+            text
+            @click="showSwapDialog = false"
+          />
+          <Button
+            label="Xác nhận hoán đổi"
+            icon="pi pi-arrow-right-arrow-left"
+            :loading="isSwapping"
+            :disabled="!swapPeriod1 || !swapPeriod2 || swapPeriod1 === swapPeriod2"
+            @click="handleSwap"
+          />
+        </template>
+      </Dialog>
     </div>
   </div>
 </template>
@@ -488,7 +660,31 @@ const winnerReceiveAmount = computed(() => {
 
     p {
       color: $text-secondary;
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+      flex-wrap: wrap;
     }
+  }
+
+  &__header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: $spacing-md;
+    flex-wrap: wrap;
+  }
+
+  &__type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-xs;
+    background: rgba($info, 0.1);
+    color: $info;
+    padding: 2px 8px;
+    border-radius: $radius-full;
+    font-size: $font-size-xs;
+    font-weight: 500;
   }
 
   &__back {
@@ -775,6 +971,102 @@ const winnerReceiveAmount = computed(() => {
     }
     50% {
       transform: scale(1.02);
+    }
+  }
+
+  // Swap Dialog Styles
+  &__swap-form {
+    @include flex-column;
+    gap: $spacing-lg;
+  }
+
+  &__swap-desc {
+    color: $text-secondary;
+    font-size: $font-size-sm;
+    margin: 0;
+  }
+
+  &__swap-selects {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: $spacing-md;
+    align-items: end;
+
+    @media (max-width: 500px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__swap-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: $surface-alt;
+    border-radius: $radius-full;
+    color: $primary;
+    margin-bottom: $spacing-xs;
+
+    @media (max-width: 500px) {
+      margin: 0 auto;
+      transform: rotate(90deg);
+    }
+  }
+
+  &__swap-preview {
+    background: rgba($primary, 0.05);
+    border: 1px solid rgba($primary, 0.2);
+    border-radius: $radius-md;
+    padding: $spacing-md;
+  }
+
+  &__swap-preview-title {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    font-size: $font-size-sm;
+    font-weight: 500;
+    color: $primary;
+    margin-bottom: $spacing-md;
+  }
+
+  &__swap-preview-content {
+    @include flex-column;
+    gap: $spacing-sm;
+  }
+
+  &__swap-item {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm;
+    background: $surface;
+    border-radius: $radius-sm;
+    font-size: $font-size-sm;
+    flex-wrap: wrap;
+  }
+
+  &__swap-period {
+    font-weight: 600;
+    color: $text-primary;
+    min-width: 60px;
+  }
+
+  &__swap-date {
+    color: $text-muted;
+  }
+
+  &__swap-arrow {
+    color: $primary;
+    font-weight: bold;
+  }
+
+  &__swap-winner {
+    font-weight: 500;
+
+    &--new {
+      color: $success;
     }
   }
 }

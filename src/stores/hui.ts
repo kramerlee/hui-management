@@ -1151,6 +1151,100 @@ export const useHuiStore = defineStore('hui', () => {
     payments.value = []
   }
 
+  async function swapPeriodWinnersDemo(periodId1: string, periodId2: string): Promise<boolean> {
+    const allPeriods = loadFromStorage<HuiPeriod>(STORAGE_KEYS.periods)
+    
+    const period1Index = allPeriods.findIndex(p => p.id === periodId1)
+    const period2Index = allPeriods.findIndex(p => p.id === periodId2)
+    
+    if (period1Index === -1 || period2Index === -1) {
+      error.value = 'Không tìm thấy kỳ hụi'
+      return false
+    }
+    
+    const period1 = allPeriods[period1Index]
+    const period2 = allPeriods[period2Index]
+    
+    // Swap winners
+    allPeriods[period1Index] = {
+      ...period1,
+      winnerId: period2.winnerId,
+      winnerName: period2.winnerName
+    }
+    allPeriods[period2Index] = {
+      ...period2,
+      winnerId: period1.winnerId,
+      winnerName: period1.winnerName
+    }
+    
+    saveToStorage(STORAGE_KEYS.periods, allPeriods)
+    
+    // Update local state
+    if (currentGroup.value) {
+      await fetchPeriodsDemo(currentGroup.value.id)
+    }
+    
+    return true
+  }
+
+  async function swapPeriodWinnersFirebase(periodId1: string, periodId2: string): Promise<boolean> {
+    const fs = await getFirestore()
+    const db = await getFirebaseDb()
+    if (!db) return false
+    
+    const period1Ref = fs.doc(db, 'huiPeriods', periodId1)
+    const period2Ref = fs.doc(db, 'huiPeriods', periodId2)
+    
+    const [period1Snap, period2Snap] = await Promise.all([
+      fs.getDoc(period1Ref),
+      fs.getDoc(period2Ref)
+    ])
+    
+    if (!period1Snap.exists() || !period2Snap.exists()) {
+      error.value = 'Không tìm thấy kỳ hụi'
+      return false
+    }
+    
+    const period1Data = period1Snap.data()
+    const period2Data = period2Snap.data()
+    
+    // Swap winners
+    await Promise.all([
+      fs.updateDoc(period1Ref, {
+        winnerId: period2Data.winnerId,
+        winnerName: period2Data.winnerName
+      }),
+      fs.updateDoc(period2Ref, {
+        winnerId: period1Data.winnerId,
+        winnerName: period1Data.winnerName
+      })
+    ])
+    
+    // Update local state
+    if (currentGroup.value) {
+      await fetchPeriodsFirebase(currentGroup.value.id)
+    }
+    
+    return true
+  }
+
+  async function swapPeriodWinners(periodId1: string, periodId2: string): Promise<boolean> {
+    loading.value = true
+    error.value = null
+    try {
+      if (isDemoMode.value) {
+        return await swapPeriodWinnersDemo(periodId1, periodId2)
+      } else {
+        return await swapPeriodWinnersFirebase(periodId1, periodId2)
+      }
+    } catch (e) {
+      error.value = (e as Error).message
+      return false
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     huiGroups,
     currentGroup,
@@ -1172,6 +1266,7 @@ export const useHuiStore = defineStore('hui', () => {
     removeMember,
     fetchPeriods,
     completePeriod,
+    swapPeriodWinners,
     fetchPayments,
     markPaymentPaid,
     clearCurrentGroup
