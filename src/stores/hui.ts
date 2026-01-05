@@ -49,6 +49,16 @@ function saveToStorage<T>(key: string, data: T[]): void {
   localStorage.setItem(key, JSON.stringify(data))
 }
 
+// Fisher-Yates shuffle algorithm
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array]
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+  return shuffled
+}
+
 export const useHuiStore = defineStore('hui', () => {
   const huiGroups = ref<HuiGroup[]>([])
   const currentGroup = ref<HuiGroup | null>(null)
@@ -135,8 +145,13 @@ export const useHuiStore = defineStore('hui', () => {
 
   async function createMembersFromNamesDemo(huiGroupId: string, memberNames: string[]) {
     const allMembers = loadFromStorage<HuiMember>(STORAGE_KEYS.members)
+    const allPeriods = loadFromStorage<HuiPeriod>(STORAGE_KEYS.periods)
     
-    memberNames.forEach((name, index) => {
+    // Shuffle member names for random assignment
+    const shuffledNames = shuffleArray(memberNames)
+    const createdMembers: HuiMember[] = []
+    
+    shuffledNames.forEach((name, index) => {
       const member: HuiMember = {
         id: generateId(),
         huiGroupId,
@@ -146,9 +161,54 @@ export const useHuiStore = defineStore('hui', () => {
         hasReceived: false,
         joinedAt: new Date().toISOString()
       }
+      createdMembers.push(member)
       allMembers.push(member)
     })
     
+    saveToStorage(STORAGE_KEYS.members, allMembers)
+    
+    // Pre-assign members to periods for random type
+    const groupPeriods = allPeriods.filter(p => p.huiGroupId === huiGroupId)
+    groupPeriods.sort((a, b) => a.periodNumber - b.periodNumber)
+    
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    
+    groupPeriods.forEach((period, index) => {
+      if (index < createdMembers.length) {
+        const member = createdMembers[index]
+        const periodDate = new Date(period.date)
+        periodDate.setHours(0, 0, 0, 0)
+        
+        // Pre-assign winner
+        const periodIndex = allPeriods.findIndex(p => p.id === period.id)
+        if (periodIndex !== -1) {
+          allPeriods[periodIndex] = {
+            ...allPeriods[periodIndex],
+            winnerId: member.id,
+            winnerName: member.name,
+            bidAmount: 0,
+            // Auto-complete if date has passed
+            status: periodDate <= today ? 'completed' : 'pending',
+            completedAt: periodDate <= today ? new Date().toISOString() : undefined
+          }
+          
+          // Mark member as received if period date has passed
+          if (periodDate <= today) {
+            const memberIndex = allMembers.findIndex(m => m.id === member.id)
+            if (memberIndex !== -1) {
+              allMembers[memberIndex] = {
+                ...allMembers[memberIndex],
+                hasReceived: true,
+                receivedPeriod: period.periodNumber
+              }
+            }
+          }
+        }
+      }
+    })
+    
+    saveToStorage(STORAGE_KEYS.periods, allPeriods)
     saveToStorage(STORAGE_KEYS.members, allMembers)
   }
 
@@ -263,7 +323,54 @@ export const useHuiStore = defineStore('hui', () => {
 
   async function fetchPeriodsDemo(huiGroupId: string) {
     const allPeriods = loadFromStorage<HuiPeriod>(STORAGE_KEYS.periods)
-    periods.value = allPeriods.filter(p => p.huiGroupId === huiGroupId).sort((a, b) => a.periodNumber - b.periodNumber)
+    const groupPeriods = allPeriods.filter(p => p.huiGroupId === huiGroupId).sort((a, b) => a.periodNumber - b.periodNumber)
+    
+    // Auto-complete past periods for random type hui
+    const group = currentGroup.value
+    if (group && group.huiType === 'random') {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      let updated = false
+      
+      groupPeriods.forEach(period => {
+        if (period.status === 'pending' && period.winnerId) {
+          const periodDate = new Date(period.date)
+          periodDate.setHours(0, 0, 0, 0)
+          
+          if (periodDate <= today) {
+            const periodIndex = allPeriods.findIndex(p => p.id === period.id)
+            if (periodIndex !== -1) {
+              allPeriods[periodIndex] = {
+                ...allPeriods[periodIndex],
+                status: 'completed',
+                completedAt: new Date().toISOString()
+              }
+              period.status = 'completed'
+              period.completedAt = new Date().toISOString()
+              updated = true
+              
+              // Also update member hasReceived
+              const allMembers = loadFromStorage<HuiMember>(STORAGE_KEYS.members)
+              const memberIndex = allMembers.findIndex(m => m.id === period.winnerId)
+              if (memberIndex !== -1 && !allMembers[memberIndex].hasReceived) {
+                allMembers[memberIndex] = {
+                  ...allMembers[memberIndex],
+                  hasReceived: true,
+                  receivedPeriod: period.periodNumber
+                }
+                saveToStorage(STORAGE_KEYS.members, allMembers)
+              }
+            }
+          }
+        }
+      })
+      
+      if (updated) {
+        saveToStorage(STORAGE_KEYS.periods, allPeriods)
+      }
+    }
+    
+    periods.value = groupPeriods
   }
 
   async function completePeriodDemo(periodId: string, bid: PeriodBidForm): Promise<boolean> {
@@ -442,16 +549,66 @@ export const useHuiStore = defineStore('hui', () => {
     const db = await getFirebaseDb()
     if (!db) return
     
-    for (let i = 0; i < memberNames.length; i++) {
+    // Shuffle member names for random assignment
+    const shuffledNames = shuffleArray(memberNames)
+    const createdMembers: { id: string; name: string }[] = []
+    
+    // Create members with shuffled order
+    for (let i = 0; i < shuffledNames.length; i++) {
       const member: Omit<HuiMember, 'id'> = {
         huiGroupId,
-        name: memberNames[i].trim(),
+        name: shuffledNames[i].trim(),
         email: '',
         order: i + 1,
         hasReceived: false,
         joinedAt: new Date().toISOString()
       }
-      await fs.addDoc(fs.collection(db, 'huiMembers'), member)
+      const docRef = await fs.addDoc(fs.collection(db, 'huiMembers'), member)
+      createdMembers.push({ id: docRef.id, name: shuffledNames[i].trim() })
+    }
+    
+    // Fetch periods for this group
+    const periodsQuery = fs.query(
+      fs.collection(db, 'huiPeriods'),
+      fs.where('huiGroupId', '==', huiGroupId),
+      fs.orderBy('periodNumber', 'asc')
+    )
+    const periodsSnap = await fs.getDocs(periodsQuery)
+    
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    
+    // Pre-assign members to periods
+    let index = 0
+    for (const periodDoc of periodsSnap.docs) {
+      if (index < createdMembers.length) {
+        const member = createdMembers[index]
+        const periodData = periodDoc.data()
+        const periodDate = new Date(periodData.date)
+        periodDate.setHours(0, 0, 0, 0)
+        
+        const isPast = periodDate <= today
+        
+        // Update period with pre-assigned winner
+        await fs.updateDoc(periodDoc.ref, {
+          winnerId: member.id,
+          winnerName: member.name,
+          bidAmount: 0,
+          status: isPast ? 'completed' : 'pending',
+          ...(isPast && { completedAt: new Date().toISOString() })
+        })
+        
+        // Mark member as received if period date has passed
+        if (isPast) {
+          const memberRef = fs.doc(db, 'huiMembers', member.id)
+          await fs.updateDoc(memberRef, {
+            hasReceived: true,
+            receivedPeriod: periodData.periodNumber
+          })
+        }
+        
+        index++
+      }
     }
   }
 
@@ -596,10 +753,48 @@ export const useHuiStore = defineStore('hui', () => {
       fs.orderBy('periodNumber', 'asc')
     )
     const snapshot = await fs.getDocs(q)
-    periods.value = snapshot.docs.map(d => ({
+    const groupPeriods = snapshot.docs.map(d => ({
       id: d.id,
       ...d.data()
     })) as HuiPeriod[]
+    
+    // Auto-complete past periods for random type hui
+    const group = currentGroup.value
+    if (group && group.huiType === 'random') {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      
+      for (const period of groupPeriods) {
+        if (period.status === 'pending' && period.winnerId) {
+          const periodDate = new Date(period.date)
+          periodDate.setHours(0, 0, 0, 0)
+          
+          if (periodDate <= today) {
+            // Update period status in Firebase
+            await fs.updateDoc(fs.doc(db, 'huiPeriods', period.id), {
+              status: 'completed',
+              completedAt: new Date().toISOString()
+            })
+            period.status = 'completed'
+            period.completedAt = new Date().toISOString()
+            
+            // Update member hasReceived
+            if (period.winnerId) {
+              const memberRef = fs.doc(db, 'huiMembers', period.winnerId)
+              const memberSnap = await fs.getDoc(memberRef)
+              if (memberSnap.exists() && !memberSnap.data().hasReceived) {
+                await fs.updateDoc(memberRef, {
+                  hasReceived: true,
+                  receivedPeriod: period.periodNumber
+                })
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    periods.value = groupPeriods
   }
 
   async function completePeriodFirebase(periodId: string, bid: PeriodBidForm): Promise<boolean> {

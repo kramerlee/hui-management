@@ -75,13 +75,33 @@ function getStatusClass(status: string): string {
   }
 }
 
-function getStatusLabel(status: string): string {
+function getStatusLabel(status: string, isRandom: boolean, isPast: boolean): string {
+  if (status === 'completed') return 'Đã hốt'
+  if (isRandom) {
+    if (isPast) return 'Đã hốt'
+    return 'Lên lịch'
+  }
   switch (status) {
-    case 'completed': return 'Hoàn thành'
     case 'bidding': return 'Đang khui'
     case 'pending': return 'Chờ khui'
     default: return status
   }
+}
+
+function isPastDate(dateStr: string): boolean {
+  const periodDate = new Date(dateStr)
+  periodDate.setHours(0, 0, 0, 0)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return periodDate < today
+}
+
+function isTodayDate(dateStr: string): boolean {
+  const periodDate = new Date(dateStr)
+  periodDate.setHours(0, 0, 0, 0)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return periodDate.getTime() === today.getTime()
 }
 
 const isRandomType = computed(() => group.value?.huiType === 'random')
@@ -212,7 +232,13 @@ const winnerReceiveAmount = computed(() => {
             </Column>
             <Column field="date" header="Ngày" sortable>
               <template #body="{ data }">
-                {{ formatDate(data.date) }}
+                <div class="hui-periods__date" :class="{
+                  'hui-periods__date--past': isPastDate(data.date),
+                  'hui-periods__date--today': isTodayDate(data.date)
+                }">
+                  <span v-if="isTodayDate(data.date)" class="hui-periods__date-badge">Hôm nay</span>
+                  {{ formatDate(data.date) }}
+                </div>
               </template>
             </Column>
             <Column field="totalAmount" header="Tổng tiền" sortable>
@@ -233,9 +259,14 @@ const winnerReceiveAmount = computed(() => {
             <Column field="winnerName" header="Người hốt">
               <template #body="{ data }">
                 <template v-if="data.winnerName">
-                  <span class="hui-periods__winner">
-                    <i class="pi pi-user"></i>
+                  <span class="hui-periods__winner" :class="{
+                    'hui-periods__winner--scheduled': isRandomType && data.status !== 'completed'
+                  }">
+                    <i :class="isRandomType && data.status !== 'completed' ? 'pi pi-calendar' : 'pi pi-user'"></i>
                     {{ data.winnerName }}
+                    <span v-if="isRandomType && data.status !== 'completed'" class="hui-periods__scheduled-tag">
+                      (Đã lên lịch)
+                    </span>
                   </span>
                 </template>
                 <span v-else class="text-muted">-</span>
@@ -244,23 +275,37 @@ const winnerReceiveAmount = computed(() => {
             <Column field="status" header="Trạng thái" sortable>
               <template #body="{ data }">
                 <span class="badge" :class="getStatusClass(data.status)">
-                  {{ getStatusLabel(data.status) }}
+                  {{ getStatusLabel(data.status, isRandomType, isPastDate(data.date)) }}
                 </span>
               </template>
             </Column>
-            <Column header="Thao tác" style="width: 120px">
+            <Column header="Thao tác" style="width: 150px">
               <template #body="{ data }">
-                <Button
-                  v-if="data.status !== 'completed'"
-                  label="Khui"
-                  icon="pi pi-play"
-                  size="small"
-                  :disabled="eligibleMembers.length === 0"
-                  @click="openBidDialog(data)"
-                />
-                <span v-else class="hui-periods__completed">
-                  <i class="pi pi-check-circle"></i>
-                </span>
+                <!-- For random type: show scheduled info, no action needed -->
+                <template v-if="isRandomType">
+                  <span v-if="data.status === 'completed'" class="hui-periods__completed">
+                    <i class="pi pi-check-circle"></i>
+                    Đã hốt
+                  </span>
+                  <span v-else class="hui-periods__scheduled-status">
+                    <i class="pi pi-clock"></i>
+                    Chờ đến ngày
+                  </span>
+                </template>
+                <!-- For bidding type: show khui button -->
+                <template v-else>
+                  <Button
+                    v-if="data.status !== 'completed'"
+                    label="Khui"
+                    icon="pi pi-play"
+                    size="small"
+                    :disabled="eligibleMembers.length === 0"
+                    @click="openBidDialog(data)"
+                  />
+                  <span v-else class="hui-periods__completed">
+                    <i class="pi pi-check-circle"></i>
+                  </span>
+                </template>
               </template>
             </Column>
           </DataTable>
@@ -459,19 +504,76 @@ const winnerReceiveAmount = computed(() => {
     font-size: $font-size-sm;
   }
 
+  &__date {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+
+    &--past {
+      color: $text-muted;
+    }
+
+    &--today {
+      font-weight: 600;
+      color: $primary;
+    }
+  }
+
+  &__date-badge {
+    display: inline-block;
+    background: $primary;
+    color: white;
+    font-size: $font-size-xs;
+    padding: 2px 8px;
+    border-radius: $radius-full;
+    font-weight: 500;
+  }
+
   &__winner {
     display: flex;
     align-items: center;
     gap: $spacing-xs;
+    flex-wrap: wrap;
 
     i {
       color: $success;
     }
+
+    &--scheduled {
+      i {
+        color: $info;
+      }
+    }
+  }
+
+  &__scheduled-tag {
+    font-size: $font-size-xs;
+    color: $info;
+    font-weight: 400;
   }
 
   &__completed {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
     color: $success;
-    font-size: 1.25rem;
+    font-size: $font-size-sm;
+    
+    i {
+      font-size: 1.25rem;
+    }
+  }
+
+  &__scheduled-status {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    color: $info;
+    font-size: $font-size-sm;
+
+    i {
+      font-size: 1rem;
+    }
   }
 
   .text-muted {
