@@ -2,12 +2,12 @@
 # https://kramerlee.github.io/hui-management/
 
 User-agent: *
-Allow: /
+Allow: /hui-management/
+Allow: /hui-management/login
 
 # Sitemap location
 Sitemap: https://kramerlee.github.io/hui-management/sitemap.xml
 
-# Disallow authenticated routes (they're not accessible to crawlers anyway)
+# Disallow authenticated routes
 Disallow: /hui-management/dashboard
 Disallow: /hui-management/hui/
-
