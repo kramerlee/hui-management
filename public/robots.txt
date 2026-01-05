@@ -1,0 +1,13 @@
+# Robots.txt for Hui Management
+# https://kramerlee.github.io/hui-management/
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://kramerlee.github.io/hui-management/sitemap.xml
+
+# Disallow authenticated routes (they're not accessible to crawlers anyway)
+Disallow: /hui-management/dashboard
+Disallow: /hui-management/hui/
+
