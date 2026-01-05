@@ -272,6 +272,23 @@ const winnerReceiveAmount = computed(() => {
                 <span v-else class="text-muted">-</span>
               </template>
             </Column>
+            <Column v-if="isRandomType" field="date" header="Ngày hốt" sortable>
+              <template #body="{ data }">
+                <div class="hui-periods__collection-date" :class="{
+                  'hui-periods__collection-date--past': data.status === 'completed',
+                  'hui-periods__collection-date--today': isTodayDate(data.date),
+                  'hui-periods__collection-date--upcoming': data.status !== 'completed' && !isPastDate(data.date)
+                }">
+                  <i :class="{
+                    'pi pi-check-circle': data.status === 'completed',
+                    'pi pi-calendar-clock': data.status !== 'completed' && isTodayDate(data.date),
+                    'pi pi-calendar': data.status !== 'completed' && !isTodayDate(data.date)
+                  }"></i>
+                  <span>{{ formatDate(data.date) }}</span>
+                  <span v-if="isTodayDate(data.date)" class="hui-periods__today-badge">Hôm nay</span>
+                </div>
+              </template>
+            </Column>
             <Column field="status" header="Trạng thái" sortable>
               <template #body="{ data }">
                 <span class="badge" :class="getStatusClass(data.status)">
@@ -574,6 +591,39 @@ const winnerReceiveAmount = computed(() => {
     i {
       font-size: 1rem;
     }
+  }
+
+  &__collection-date {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    font-size: $font-size-sm;
+
+    i {
+      font-size: 1rem;
+    }
+
+    &--past {
+      color: $success;
+    }
+
+    &--today {
+      color: $primary;
+      font-weight: 600;
+    }
+
+    &--upcoming {
+      color: $text-secondary;
+    }
+  }
+
+  &__today-badge {
+    background: $primary;
+    color: white;
+    font-size: $font-size-xs;
+    padding: 2px 6px;
+    border-radius: $radius-full;
+    margin-left: $spacing-xs;
   }
 
   .text-muted {
